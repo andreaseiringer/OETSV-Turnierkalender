@@ -1,0 +1,20 @@
+[Unit]
+Description=pivitLABS ÖTSV Tool - Tanzsport Kalender & Nennungen (https://pivitlabs.com)
+After=network.target
+
+[Service]
+Type=simple
+User=oetsv
+Group=oetsv
+WorkingDirectory=/opt/adsi-portal
+EnvironmentFile=/opt/adsi-portal/.env
+ExecStart=/opt/adsi-portal/.venv/bin/uvicorn app.main:app --host ${HOST} --port ${PORT}
+Restart=always
+RestartSec=5s
+NoNewPrivileges=true
+PrivateTmp=true
+StandardOutput=append:/opt/adsi-portal/logs/adsi.log
+StandardError=append:/opt/adsi-portal/logs/adsi.log
+
+[Install]
+WantedBy=multi-user.target

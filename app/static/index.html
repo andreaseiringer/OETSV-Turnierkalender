@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pivitLABS ÖTSV Tool – Turnierkalender</title>
+  <link rel="stylesheet" href="/static/css/style.css?v=1.4.0">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="container header-inner">
+      <a href="/" class="brand">
+        <div class="brand-icon">pL</div>
+        <div>
+          <div class="brand-title">pivitLABS ÖTSV Tool</div>
+          <div id="brand-subtitle" class="brand-subtitle">Turnierkalender &amp; Nennungen</div>
+        </div>
+      </a>
+
+      <div class="header-actions">
+        <span id="app-version-badge" class="badge-count">v1.4.0</span>
+        <a href="/adsi-admin" class="btn-nav" title="Admin Control Center">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          Admin
+        </a>
+        <button id="theme-toggle" class="btn-icon" title="Erscheinungsbild wechseln" aria-label="Dark/Light Mode">
+          <span id="theme-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <div class="container">
+
+      <!-- Filter Panel (FA-5.2) -->
+      <section class="filter-card">
+        <!-- Search bar -->
+        <div class="search-bar">
+          <span class="search-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </span>
+          <input type="text" id="search-input" class="search-input" placeholder="Volltextsuche nach Turnier, Klub, Bundesland...">
+        </div>
+
+        <!-- Filter Bundesland -->
+        <div class="filter-row">
+          <span class="filter-label">Bundesland:</span>
+          <div class="filter-options" id="filter-bundesland">
+            <button class="chip-btn active" data-val="Alle">Alle</button>
+            <button class="chip-btn" data-val="Wien">Wien</button>
+            <button class="chip-btn" data-val="NÖ">NÖ</button>
+            <button class="chip-btn" data-val="OÖ">OÖ</button>
+            <button class="chip-btn" data-val="Salzburg">Salzburg</button>
+            <button class="chip-btn" data-val="Steiermark">Steiermark</button>
+            <button class="chip-btn" data-val="Kärnten">Kärnten</button>
+            <button class="chip-btn" data-val="Tirol">Tirol</button>
+            <button class="chip-btn" data-val="Vorarlberg">Vorarlberg</button>
+            <button class="chip-btn" data-val="Burgenland">Burgenland</button>
+          </div>
+        </div>
+
+        <!-- Filter Disziplin -->
+        <div class="filter-row">
+          <span class="filter-label">Disziplin:</span>
+          <div class="filter-options" id="filter-disziplin">
+            <button class="chip-btn active" data-val="Alle">Alle</button>
+            <button class="chip-btn" data-val="Standard">Standard</button>
+            <button class="chip-btn" data-val="Latein">Latein</button>
+            <button class="chip-btn" data-val="Kombination">Kombination</button>
+            <button class="chip-btn" data-val="Formationen">Formationen</button>
+          </div>
+        </div>
+
+        <!-- Filter Altersklasse -->
+        <div class="filter-row">
+          <span class="filter-label">Altersklasse:</span>
+          <div class="filter-options" id="filter-altersklasse">
+            <button class="chip-btn active" data-val="Alle">Alle</button>
+            <button class="chip-btn" data-val="Allgemeine Klasse">Allg. Klasse</button>
+            <button class="chip-btn" data-val="Senioren">Senioren</button>
+            <button class="chip-btn" data-val="Jugend">Jugend</button>
+            <button class="chip-btn" data-val="Junioren">Junioren</button>
+            <button class="chip-btn" data-val="Schüler">Schüler</button>
+          </div>
+        </div>
+
+        <div class="filter-footer">
+          <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+            <button id="filter-results-btn" class="chip-btn" style="border:1px solid #d97706;">
+              🏆 Nur mit Ergebnissen
+            </button>
+            <span id="active-filters-indicator" class="active-filter-badge" style="display:none;">
+              ● Filter aktiv
+            </span>
+          </div>
+          <button id="btn-reset-filters" class="btn-reset">Filter zurücksetzen</button>
+        </div>
+      </section>
+
+      <!-- Sub Navigation & Sync Status (FA-5.3 & FA-5.8) -->
+      <div class="sub-nav">
+        <div class="tabs-group">
+          <button id="tab-aktuell" class="tab-btn active">
+            Aktuelle Turniere (<span id="count-aktuell">0</span>)
+          </button>
+          <button id="tab-vergangen" class="tab-btn">
+            Vergangene Turniere (<span id="count-vergangen">0</span>)
+          </button>
+        </div>
+
+        <div class="sync-ticker">
+          <span class="sync-item">
+            <span class="status-dot"></span>
+            <span id="sync-scraper-status">Scraper: Bereit</span>
+          </span>
+          <span class="sync-item">
+            <span class="status-dot"></span>
+            <span id="sync-fetcher-status">Mail-Import: Bereit</span>
+          </span>
+          <span class="sync-item">
+            <span class="status-dot"></span>
+            <span id="sync-results-status">Ergebnisse: Bereit</span>
+          </span>
+          <span class="sync-item">
+            <span class="status-dot"></span>
+            <span id="sync-teilnehmer-status">Teilnehmer: Bereit</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Tournament Table (FA-5.1, FA-5.4, FA-5.5) -->
+      <div class="table-wrapper">
+        <table class="tournament-table">
+          <thead>
+            <tr>
+              <th style="width:115px;">Datum</th>
+              <th>Veranstaltung &amp; Tags</th>
+              <th style="width:170px;">Links</th>
+              <th style="width:140px; text-align:center;">Paare</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <!-- Populated dynamically via app.js -->
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Nennungs Modal (FA-5.6) -->
+  <div id="paare-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <div id="modal-tournament-title" class="modal-title">Turniertitel</div>
+          <div id="modal-tournament-sub" class="modal-subtitle">Datum &bull; Klub</div>
+        </div>
+        <button id="modal-close-btn" class="btn-icon" aria-label="Schließen">&times;</button>
+      </div>
+      <div id="modal-couples-list" class="modal-body">
+        <!-- Populated dynamically -->
+      </div>
+      <div class="modal-footer">
+        <button id="modal-close-footer" class="chip-btn">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Teilnehmerliste Modal -->
+  <div id="teilnehmer-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-card modal-card-large">
+      <div class="modal-header">
+        <div>
+          <div id="teilnehmer-modal-title" class="modal-title">Teilnehmerliste</div>
+          <div id="teilnehmer-modal-sub" class="modal-subtitle">Datum &bull; Klub</div>
+        </div>
+        <button id="teilnehmer-modal-close-btn" class="btn-icon" aria-label="Schließen">&times;</button>
+      </div>
+
+      <!-- Original Link Banner at Top -->
+      <div class="teilnehmer-top-banner">
+        <a id="teilnehmer-original-link" href="#" target="_blank" rel="noopener noreferrer" class="original-list-btn">
+          <span>🔗 Offizielle ÖTSV-Teilnehmerliste öffnen</span>
+          <span style="font-size:1.1em;">↗</span>
+        </a>
+        <div id="teilnehmer-summary-badge" class="teilnehmer-stats"></div>
+      </div>
+
+      <!-- Class Filter Section -->
+      <div class="teilnehmer-filter-section">
+        <div class="teilnehmer-filter-row">
+          <div class="teilnehmer-search-bar">
+            <input type="text" id="teilnehmer-search-input" class="search-input" placeholder="Paarname, Klub oder Klasse suchen...">
+          </div>
+          <div class="teilnehmer-select-wrapper">
+            <select id="teilnehmer-class-select" class="teilnehmer-select" aria-label="Klasse auswählen">
+              <option value="Alle">Alle Klassen</option>
+            </select>
+          </div>
+        </div>
+        <div class="teilnehmer-classes-wrapper">
+          <div id="teilnehmer-class-chips" class="filter-options horizontal-scroll-chips">
+            <!-- Filter chips populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Content grouped by class with club couples highlighted -->
+      <div id="teilnehmer-modal-content" class="modal-body">
+        <!-- Populated dynamically -->
+      </div>
+
+      <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center;">
+        <span id="teilnehmer-modal-updated" style="font-size:0.75rem; color:var(--text-muted);"></span>
+        <button id="teilnehmer-modal-close-footer" class="chip-btn">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="container footer-inner" style="flex-direction:column; align-items:stretch; gap:0.5rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+        <div>
+          <strong>pivitLABS ÖTSV Tool</strong> &bull; Self-Hosted Tanzsport-Informationssystem
+        </div>
+        <div>
+          <a href="/adsi-admin" style="color:var(--text-muted); text-decoration:none; margin-right: 1rem;">Admin Center</a>
+          <span>Copyright &copy; 2026 <a href="https://pivitlabs.com" target="_blank" rel="noopener noreferrer" style="color:var(--primary); text-decoration:none; font-weight:600;">pivitlabs</a> (<a href="https://pivitlabs.com" target="_blank" rel="noopener noreferrer" style="color:var(--text-muted);">https://pivitlabs.com</a>)</span>
+        </div>
+      </div>
+      <div style="font-size:0.75rem; color:var(--text-muted); line-height:1.4; border-top:1px solid var(--border-color); padding-top:0.5rem;">
+        <strong>Disclaimer / Haftungsausschluss:</strong> Das <em>pivitLABS ÖTSV Tool</em> ist ein unabhängiges Open-Source-Werkzeug von <a href="https://pivitlabs.com" target="_blank" rel="noopener noreferrer" style="color:var(--text-muted);">pivitlabs</a> und steht in keiner offiziellen Verbindung zum Österreichischen TanzSport-Verband (ÖTSV). Alle Turnier-, Nennungs- und Ergebnisdaten werden automatisiert aus öffentlich zugänglichen Quellen aggregiert. Bereitstellung ohne Gewähr auf Richtigkeit, Vollständigkeit oder Aktualität; verbindlich sind ausschließlich die offiziellen Ausschreibungen und Veröffentlichungen des ÖTSV.
+      </div>
+    </div>
+  </footer>
+
+  <script src="/static/js/app.js?v=1.4.0"></script>
+</body>
+</html>

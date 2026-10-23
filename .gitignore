@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+data/
+logs/
+.env
+.DS_Store
+build/
+dist/
+release/
+*.spec
+

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pivitLABS ÖTSV Tool – Admin Control Center</title>
+  <link rel="stylesheet" href="/static/css/style.css?v=1.4.0">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="container header-inner">
+      <a href="/adsi-admin" class="brand">
+        <div class="brand-icon" style="background: linear-gradient(135deg, #d97706, #dc2626);">⚙</div>
+        <div>
+          <div class="brand-title">Admin Control Center</div>
+          <div class="brand-subtitle">pivitLABS ÖTSV Tool &bull; System Monitoring &amp; Operations</div>
+        </div>
+      </a>
+
+      <div class="header-actions">
+        <a href="/" class="btn-nav">
+          &larr; Zum Turnierkalender
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+
+      <!-- Status KPIs (FA-6.2) -->
+      <div class="admin-grid">
+        <div class="kpi-card">
+          <div class="kpi-title">Turniere in DB</div>
+          <div id="kpi-turniere" class="kpi-value">0</div>
+          <div class="kpi-sub">Gesamter Datenbestand</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Nennungen</div>
+          <div id="kpi-nennungen" class="kpi-value">0</div>
+          <div class="kpi-sub">Gemeldete Vereinspaare</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Startklassen</div>
+          <div id="kpi-klassen" class="kpi-value">0</div>
+          <div class="kpi-sub">Einzelstarts über alle Nennungen</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Turnierergebnisse</div>
+          <div id="kpi-ergebnisse" class="kpi-value">0</div>
+          <div class="kpi-sub">Gespeicherte Platzierungen</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Teilnehmer</div>
+          <div id="kpi-teilnehmer" class="kpi-value">0</div>
+          <div class="kpi-sub">Importierte Nennungen</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Server-Status</div>
+          <div id="kpi-server-time" class="kpi-value" style="font-size:1.25rem; font-weight:700; margin-top:0.75rem;">--:--:--</div>
+          <div class="kpi-sub">Betriebsbereit (Europe/Vienna)</div>
+        </div>
+      </div>
+
+      <!-- Trigger & Job Operations (FA-6.3 & FA-6.4) -->
+      <section class="admin-actions-card">
+        <h3 style="margin-bottom:1rem; font-weight:700;">Hintergrund-Aufgaben &amp; Manuelle Steuerung</h3>
+
+        <div id="trigger-status-banner" style="display:none; padding:0.75rem; background-color:var(--primary-subtle); color:var(--primary); border-radius:0.375rem; margin-bottom:1rem; font-weight:600; font-size:0.875rem;"></div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1.25rem;">
+          <!-- Scraper Card -->
+          <div style="background:var(--bg-subtle); border:1px solid var(--border-color); padding:1rem; border-radius:0.5rem;">
+            <h4 style="font-weight:700;">ÖTSV Kalender-Scraper</h4>
+            <p style="font-size:0.8125rem; color:var(--text-muted); margin:0.25rem 0 0.75rem 0;">
+              Zyklischer Abruf für 12 Monate rollierend (Täglich 04:00 Uhr).
+            </p>
+            <div style="font-size:0.75rem; margin-bottom:0.75rem;">
+              <strong>Nächster Lauf:</strong> <span id="next-run-scraper">--</span><br>
+              <strong>Status:</strong> <span id="status-msg-scraper">--</span>
+            </div>
+            <button id="btn-trigger-scraper" class="btn-primary">
+              Kalender jetzt scrapen
+            </button>
+          </div>
+
+          <!-- Teilnehmer Scraper Card -->
+          <div style="background:var(--bg-subtle); border:1px solid var(--border-color); padding:1rem; border-radius:0.5rem;">
+            <h4 style="font-weight:700;">👥 ÖTSV Teilnehmerlisten-Scraper</h4>
+            <p style="font-size:0.8125rem; color:var(--text-muted); margin:0.25rem 0 0.75rem 0;">
+              Importiert offizielle ÖTSV-Teilnehmerlisten (4x täglich: 02, 08, 14, 20 Uhr).
+            </p>
+            <div style="font-size:0.75rem; margin-bottom:0.75rem;">
+              <strong>Nächster Lauf:</strong> <span id="next-run-teilnehmer-scraper">--</span><br>
+              <strong>Status:</strong> <span id="status-msg-teilnehmer-scraper">--</span>
+            </div>
+            <button id="btn-trigger-teilnehmer-scraper" class="btn-primary" style="background:#16a34a; border-color:#15803d;">
+              Teilnehmerlisten jetzt abrufen
+            </button>
+          </div>
+
+          <!-- Results Scraper Card -->
+          <div style="background:var(--bg-subtle); border:1px solid var(--border-color); padding:1rem; border-radius:0.5rem;">
+            <h4 style="font-weight:700;">🏆 ÖTSV Ergebnisse-Scraper</h4>
+            <p style="font-size:0.8125rem; color:var(--text-muted); margin:0.25rem 0 0.75rem 0;">
+              Liest TopTurnier-Berichte für Turniere mit Vereinsbeteiligung (Täglich 06:00 &amp; 20:00).
+            </p>
+            <div style="font-size:0.75rem; margin-bottom:0.75rem;">
+              <strong>Nächster Lauf:</strong> <span id="next-run-results-scraper">--</span><br>
+              <strong>Status:</strong> <span id="status-msg-results-scraper">--</span>
+            </div>
+            <button id="btn-trigger-results-scraper" class="btn-primary" style="background:#d97706; border-color:#b45309;">
+              Ergebnisse jetzt abrufen
+            </button>
+          </div>
+
+          <!-- Fetcher Card -->
+          <div style="background:var(--bg-subtle); border:1px solid var(--border-color); padding:1rem; border-radius:0.5rem;">
+            <h4 style="font-weight:700;">IMAP E-Mail Fetcher</h4>
+            <p style="font-size:0.8125rem; color:var(--text-muted); margin:0.25rem 0 0.75rem 0;">
+              Import von Nennungsbestätigungen aus dem Postfach (Intervall 15 Min).
+            </p>
+            <div style="font-size:0.75rem; margin-bottom:0.75rem;">
+              <strong>Nächster Lauf:</strong> <span id="next-run-fetcher">--</span><br>
+              <strong>Status:</strong> <span id="status-msg-fetcher">--</span>
+            </div>
+            <button id="btn-trigger-fetcher" class="btn-primary">
+              Mail-Abruf jetzt starten
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Club Configuration Card ("Verein einstellen") -->
+      <section class="admin-actions-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+          <div>
+            <h3 style="font-weight:700;">Verein einstellen</h3>
+            <p style="font-size:0.8125rem; color:var(--text-muted);">
+              Eigenen Tanzsportklub festlegen für die Hervorhebung in Teilnehmerlisten, Ergebnis-Auswertungen und Portal-Anzeige.
+            </p>
+          </div>
+          <button id="btn-reload-club-config" class="chip-btn" title="Aktuelle Vereinseinstellung neu laden">Aktualisieren</button>
+        </div>
+
+        <div id="club-config-alert" class="alert-box"></div>
+
+        <form id="club-config-form" onsubmit="return false;">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="cfg-club-name">Vereinsname (Anzeigename)</label>
+              <input type="text" id="cfg-club-name" class="form-input" placeholder="z. B. TSC Musterverein">
+              <span class="form-hint">Wird im Portal-Header, in der Teilnehmerliste und beim Ergebnis-Export angezeigt.</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="cfg-club-short">Kurzbezeichnung (Badge-Kürzel)</label>
+              <input type="text" id="cfg-club-short" class="form-input" placeholder="z. B. Musterverein">
+              <span class="form-hint">Kompaktes Kürzel für Tabellen-Badges (z. B. „• 3 Musterverein“).</span>
+            </div>
+
+            <div class="form-group full-width">
+              <label class="form-label" for="cfg-club-keywords">Suchbegriffe für ÖTSV-Abgleich (optional)</label>
+              <input type="text" id="cfg-club-keywords" class="form-input" placeholder="z. B. tsc, musterverein (leer lassen für automatische Ableitung aus Vereinsname)">
+              <span class="form-hint">Alle hier angegebenen Begriffe müssen im ÖTSV-Klubnamen vorkommen, damit ein Paar als Vereinspaar erkannt wird. Aktive Suchbegriffe: <code id="cfg-club-effective-tokens">—</code></span>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.25rem; flex-wrap:wrap;">
+            <button type="button" id="btn-save-club-cfg" class="btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
+                <polyline points="7 3 7 8 15 8"/>
+              </svg>
+              Verein speichern
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- IMAP Configuration Card -->
+      <section class="admin-actions-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+          <div>
+            <h3 style="font-weight:700;">IMAP Postfach-Konfiguration</h3>
+            <p style="font-size:0.8125rem; color:var(--text-muted);">
+              Zugangsdaten und Abruf-Parameter für das Vereins-E-Mail-Postfach komfortabel verwalten.
+            </p>
+          </div>
+          <button id="btn-reload-imap-config" class="chip-btn" title="Aktuelle Konfiguration neu laden">Aktualisieren</button>
+        </div>
+
+        <div id="imap-config-alert" class="alert-box"></div>
+
+        <form id="imap-config-form" onsubmit="return false;">
+          <!-- Toggles -->
+          <div class="form-toggle-row">
+            <label class="toggle-label">
+              <input type="checkbox" id="cfg-imap-enabled">
+              <span>Mail-Abruf aktivieren (IMAP_ENABLED)</span>
+            </label>
+            <label class="toggle-label">
+              <input type="checkbox" id="cfg-imap-mock">
+              <span>Mock-Modus / Testdaten verwenden (IMAP_MOCK)</span>
+            </label>
+          </div>
+
+          <!-- Form Fields -->
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="cfg-imap-server">IMAP Server (Host)</label>
+              <input type="text" id="cfg-imap-server" class="form-input" placeholder="z. B. imap.dein-verein.at">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="cfg-imap-port">Port (SSL)</label>
+              <input type="number" id="cfg-imap-port" class="form-input" value="993" placeholder="993">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="cfg-imap-mailbox">Postfach / Ordner</label>
+              <input type="text" id="cfg-imap-mailbox" class="form-input" value="INBOX" placeholder="INBOX">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="cfg-imap-interval">Abruf-Intervall (Minuten)</label>
+              <input type="number" id="cfg-imap-interval" class="form-input" value="15" min="1" max="1440">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="cfg-imap-user">Benutzername / E-Mail-Adresse</label>
+              <input type="text" id="cfg-imap-user" class="form-input" placeholder="turniere@dein-verein.at">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="cfg-imap-password">
+                Passwort
+                <span id="cfg-imap-password-status" class="form-hint" style="color:var(--accent-green);">(Hinterlegt)</span>
+              </label>
+              <input type="password" id="cfg-imap-password" class="form-input" placeholder="Neues Passwort (leer lassen zum Beibehalten)">
+            </div>
+
+            <div class="form-group full-width">
+              <label class="form-label" for="cfg-imap-senders">Erlaubte Absender (Sicherheits-Whitelist)</label>
+              <input type="text" id="cfg-imap-senders" class="form-input" placeholder="noreply@tanzsportverband.at,office@tanzsportverband.at,nennungen@tanzsportverband.at">
+              <span class="form-hint">Kommagetrennte E-Mail-Adressen oder Domains, von denen Bestätigungen akzeptiert werden.</span>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.25rem; flex-wrap:wrap;">
+            <button type="button" id="btn-test-imap-conn" class="btn-secondary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+              Verbindung testen
+            </button>
+            <button type="button" id="btn-save-imap-cfg" class="btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
+                <polyline points="7 3 7 8 15 8"/>
+              </svg>
+              Konfiguration speichern
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Log Terminal (FA-6.5) -->
+      <section class="admin-actions-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+          <h3 style="font-weight:700;">System- &amp; Ausführungsprotokolle</h3>
+          <div style="display:flex; align-items:center; gap:1rem;">
+            <div class="tabs-group" id="log-target-tabs">
+              <button class="tab-btn active" data-target="system">System</button>
+              <button class="tab-btn" data-target="scraper">Scraper</button>
+              <button class="tab-btn" data-target="teilnehmer_scraper">Teilnehmer</button>
+              <button class="tab-btn" data-target="results_scraper">Ergebnisse</button>
+              <button class="tab-btn" data-target="fetcher">Mail-Fetcher</button>
+            </div>
+            <label style="font-size:0.8125rem; display:flex; align-items:center; gap:0.35rem; cursor:pointer;">
+              <input type="checkbox" id="log-auto-refresh"> Auto-Refresh
+            </label>
+            <button id="btn-refresh-logs" class="chip-btn">Aktualisieren</button>
+          </div>
+        </div>
+
+        <div id="log-terminal" class="log-terminal">Lade Protokolle...</div>
+      </section>
+
+      <!-- Data Inspector (FA-6.6) -->
+      <section class="admin-actions-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+          <h3 style="font-weight:700;">Daten-Inspektor (Letzte 50 Datensätze)</h3>
+          <button id="btn-refresh-data" class="chip-btn">Aktualisieren</button>
+        </div>
+
+        <h4 style="margin-bottom:0.5rem; font-weight:600;">Turniere</h4>
+        <div class="table-wrapper" style="margin-bottom:1.5rem; max-height:300px; overflow-y:auto;">
+          <table class="tournament-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Datum</th>
+                <th>Titel</th>
+                <th>Klub</th>
+                <th>Bundesland</th>
+                <th>Tags</th>
+              </tr>
+            </thead>
+            <tbody id="inspector-turniere-body"></tbody>
+          </table>
+        </div>
+
+        <h4 style="margin-bottom:0.5rem; font-weight:600;">Nennungen &amp; Startklassen</h4>
+        <div class="table-wrapper" style="max-height:300px; overflow-y:auto;">
+          <table class="tournament-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nennungs-ID</th>
+                <th>Paar</th>
+                <th>Klub</th>
+                <th>Turnier-Zuordnung</th>
+                <th>Klassen</th>
+              </tr>
+            </thead>
+            <tbody id="inspector-nennungen-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Changelog Timeline (FA-6.7) -->
+      <section class="admin-actions-card">
+        <h3 style="margin-bottom:1rem; font-weight:700;">Versionshistorie &amp; Changelog</h3>
+        <div id="changelog-container"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="app-footer">
+    <div class="container footer-inner" style="flex-direction:column; align-items:stretch; gap:0.5rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+        <div>
+          <strong>pivitLABS ÖTSV Tool</strong> &bull; Administrative Operations Console
+        </div>
+        <div>
+          <a href="/" style="color:var(--text-muted); text-decoration:none; margin-right: 1rem;">&larr; Zum Turnierkalender</a>
+          <span>Copyright &copy; 2026 <a href="https://pivitlabs.com" target="_blank" rel="noopener noreferrer" style="color:var(--primary); text-decoration:none; font-weight:600;">pivitlabs</a> (<a href="https://pivitlabs.com" target="_blank" rel="noopener noreferrer" style="color:var(--text-muted);">https://pivitlabs.com</a>)</span>
+        </div>
+      </div>
+      <div style="font-size:0.75rem; color:var(--text-muted); line-height:1.4; border-top:1px solid var(--border-color); padding-top:0.5rem;">
+        <strong>Disclaimer / Haftungsausschluss:</strong> Das <em>pivitLABS ÖTSV Tool</em> ist ein unabhängiges Open-Source-Werkzeug von <a href="https://pivitlabs.com" target="_blank" rel="noopener noreferrer" style="color:var(--text-muted);">pivitlabs</a> und steht in keiner offiziellen Verbindung zum Österreichischen TanzSport-Verband (ÖTSV). Bereitstellung ohne Gewähr („AS IS“).
+      </div>
+    </div>
+  </footer>
+
+  <script src="/static/js/admin.js?v=1.4.0"></script>
+</body>
+</html>

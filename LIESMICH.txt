@@ -1,0 +1,44 @@
+========================================================================
+  pivitLABS ÖTSV Tool – Installations- & Startanleitung
+  Copyright pivitlabs (https://pivitlabs.com)
+========================================================================
+
+Vielen Dank für das Herunterladen des pivitLABS ÖTSV Tools!
+
+SO EINFACH STARTEST DU DAS TOOL:
+------------------------------------------------------------------------
+
+[macOS – Eigenständige App]
+1. Entpacke die ZIP-Datei (oder öffne die DMG-Datei).
+2. Ziehe "pivitLABS OETSV Tool.app" in deinen "Programme"-Ordner oder
+   direkt auf deinen Schreibtisch (Desktop).
+3. Doppelklicke auf "pivitLABS OETSV Tool.app".
+   -> Hinweis beim allerersten Start auf macOS:
+      Falls macOS meldet, dass der Entwickler nicht verifiziert werden kann,
+      mache einmalig einen Rechtsklick (Ctrl+Klick) auf das App-Symbol und
+      wähle "Öffnen" -> "Öffnen".
+4. Dein Browser öffnet sich automatisch unter http://127.0.0.1:8000
+
+[Windows – Eigenständige App (.exe)]
+1. Entpacke die ZIP-Datei in einen beliebigen Ordner (z.B. Dokumente).
+2. Doppelklicke auf "Desktop-Icon-erstellen.vbs" (legt automatisch ein
+   Start-Symbol auf deinem Desktop an) ODER starte direkt
+   "pivitLABS OETSV Tool.exe".
+3. Dein Browser öffnet sich automatisch unter http://127.0.0.1:8000
+
+[Universal-Paket (Windows & Mac mit installiertem Python 3.10+)]
+- Windows: Doppelklick auf "Start_OETSV_Tool.bat"
+  (oder "Desktop-Icon-erstellen.vbs" für ein Desktop-Symbol).
+- macOS:   Doppelklick auf "Start_OETSV_Tool.command".
+
+------------------------------------------------------------------------
+VEREIN EINSTELLEN & DATENSPEICHERUNG:
+------------------------------------------------------------------------
+- Öffne im Browser das Admin-Center: http://127.0.0.1:8000/adsi-admin
+- Unter "Verein einstellen" kannst du deinen Vereinsnamen (z.B.
+  "TSC Musterverein"), das Badge-Kürzel und dein IMAP-Postfach eintragen.
+- ALLE DATEN BLEIBEN DAUERHAFT GESPEICHERT:
+  * macOS App:   ~/Library/Application Support/pivitLABS-OETSV-Tool/
+  * Windows App: %APPDATA%\pivitLABS-OETSV-Tool\
+  * Universal:   Direkt im Unterordner data/adsi.db und .env
+========================================================================
