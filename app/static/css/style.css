@@ -97,8 +97,8 @@ header.app-header {
 }
 
 .brand-logo {
-  height: 1.75rem;
-  max-height: 28px;
+  height: 50px;
+  max-height: 50px;
   width: auto;
   display: block;
   object-fit: contain;
@@ -138,6 +138,69 @@ header.app-header {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+/* pivitLABS Practice Studio Promo Banner in Header */
+.practice-studio-promo {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.375rem 1rem 0.375rem 0.625rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 55%, #0f172a 100%);
+  border: 1px solid rgba(45, 212, 191, 0.35);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.18), inset 0 0 12px rgba(139, 92, 246, 0.12);
+  text-decoration: none;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.practice-studio-promo:hover {
+  transform: translateY(-1px);
+  border-color: rgba(45, 212, 191, 0.75);
+  box-shadow: 0 4px 16px rgba(45, 212, 191, 0.22), 0 2px 8px rgba(139, 92, 246, 0.25);
+}
+
+.practice-studio-logo {
+  height: 44px;
+  max-height: 44px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+}
+
+.practice-studio-cta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
+  padding-left: 0.75rem;
+}
+
+.practice-studio-tag {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #5eead4;
+  font-weight: 700;
+}
+
+.practice-studio-link {
+  font-size: 0.8125rem;
+  color: #f8fafc;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .header-inner {
+    flex-wrap: wrap;
+    gap: 0.65rem;
+  }
+  .practice-studio-promo {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .badge-count {
