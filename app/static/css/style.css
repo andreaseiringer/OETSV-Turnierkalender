@@ -1650,6 +1650,29 @@ footer.app-footer {
 /* ==========================================================================
    Persistent Onboarding Tour (Popover + CSS Anchor Positioning & Fallbacks)
    ========================================================================== */
+.btn-tour-trigger {
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+  background-color: rgba(37, 99, 235, 0.08) !important;
+  font-weight: 600 !important;
+}
+
+.btn-tour-trigger:hover {
+  background-color: var(--primary) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .btn-tour-trigger {
+  border-color: #60a5fa !important;
+  color: #93c5fd !important;
+  background-color: rgba(59, 130, 246, 0.14) !important;
+}
+
+[data-theme="dark"] .btn-tour-trigger:hover {
+  background-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
 .tour-active-target {
   anchor-name: --tour-active-target;
   position: relative;

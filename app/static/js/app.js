@@ -1113,6 +1113,11 @@ function initOnboardingTour() {
     startBtn.addEventListener('click', () => startOnboardingTour());
   }
 
+  const footerStartBtn = document.getElementById('btn-footer-start-tour');
+  if (footerStartBtn) {
+    footerStartBtn.addEventListener('click', () => startOnboardingTour());
+  }
+
   const prevBtn = document.getElementById('tour-prev-btn');
   if (prevBtn) {
     prevBtn.addEventListener('click', () => {

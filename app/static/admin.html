@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>pivitLABS ÖTSV Tool – Admin Control Center</title>
-  <link rel="stylesheet" href="/static/css/style.css?v=1.4.5">
+  <link rel="stylesheet" href="/static/css/style.css?v=1.4.6">
 </head>
 <body>
   <h1 class="sr-only">pivitLABS ÖTSV Tool – Admin Control Center</h1>
@@ -30,13 +30,12 @@
       </a>
 
       <div class="header-actions">
-        <button id="btn-start-admin-tour" type="button" class="btn-nav" title="Admin-Tour starten">
+        <button id="btn-start-admin-tour" type="button" class="btn-nav btn-tour-trigger" title="Guided Tour nochmal starten">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"></circle>
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
           </svg>
-          Tour
+          Guided Tour
         </button>
         <a href="/" class="btn-nav">
           &larr; Zum Turnierkalender
@@ -396,6 +395,6 @@
     </div>
   </div>
 
-  <script src="/static/js/admin.js?v=1.4.5"></script>
+  <script src="/static/js/admin.js?v=1.4.6"></script>
 </body>
 </html>
