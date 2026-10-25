@@ -1038,6 +1038,50 @@ function clearTourTargetHighlight() {
   });
 }
 
+function scrollAndPositionTourPopover(popover, targetEl) {
+  if (!targetEl) return;
+
+  // Scroll so the top of the target element is comfortably below the sticky header
+  const rectBefore = targetEl.getBoundingClientRect();
+  const headerOffset = 95;
+  if (rectBefore.top < headerOffset || rectBefore.top > window.innerHeight * 0.55) {
+    const targetScrollY = Math.max(0, window.scrollY + rectBefore.top - headerOffset);
+    window.scrollTo({ top: targetScrollY, behavior: 'smooth' });
+  }
+
+  const updateCoords = () => {
+    if (!popover.matches(':popover-open')) return;
+    const rect = targetEl.getBoundingClientRect();
+    const popRect = popover.getBoundingClientRect();
+    const popW = popRect.width || 400;
+    const popH = popRect.height || 210;
+    const margin = 16;
+
+    // Horizontal: center on target, clamped to viewport
+    let left = rect.left + (rect.width / 2) - (popW / 2);
+    left = Math.max(margin, Math.min(left, window.innerWidth - popW - margin));
+
+    // Vertical: if target is tall (like the tournament table), place popover near the top of the table
+    let top;
+    if (rect.height > window.innerHeight * 0.45) {
+      top = Math.max(headerOffset + 12, rect.top + 56);
+    } else if (rect.bottom + popH + margin <= window.innerHeight) {
+      top = rect.bottom + 14;
+    } else if (rect.top - popH - margin >= headerOffset) {
+      top = rect.top - popH - 14;
+    } else {
+      top = window.innerHeight - popH - margin;
+    }
+
+    top = Math.max(margin, Math.min(top, window.innerHeight - popH - margin));
+    popover.style.left = `${Math.round(left)}px`;
+    popover.style.top = `${Math.round(top)}px`;
+  };
+
+  requestAnimationFrame(updateCoords);
+  setTimeout(updateCoords, 260);
+}
+
 function renderTourStep(index) {
   const steps = getPortalTourSteps();
   const popover = document.getElementById('app-tour-popover');
@@ -1050,7 +1094,6 @@ function renderTourStep(index) {
   const targetEl = document.querySelector(step.selector);
   if (targetEl) {
     targetEl.classList.add('tour-active-target');
-    targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   document.getElementById('tour-step-badge').textContent = `Schritt ${index + 1} von ${steps.length}`;
@@ -1081,9 +1124,13 @@ function renderTourStep(index) {
     } catch (_) {}
   }
 
+  if (targetEl) {
+    scrollAndPositionTourPopover(popover, targetEl);
+  }
+
   // MANDATORY: Programmatically route focus into the non-modal popover
   if (nextBtn) {
-    nextBtn.focus();
+    nextBtn.focus({ preventScroll: true });
   }
 }
 

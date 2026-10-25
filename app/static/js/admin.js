@@ -502,6 +502,47 @@ function clearAdminTourHighlight() {
   });
 }
 
+function scrollAndPositionAdminTourPopover(popover, targetEl) {
+  if (!targetEl) return;
+
+  const rectBefore = targetEl.getBoundingClientRect();
+  const headerOffset = 95;
+  if (rectBefore.top < headerOffset || rectBefore.top > window.innerHeight * 0.55) {
+    const targetScrollY = Math.max(0, window.scrollY + rectBefore.top - headerOffset);
+    window.scrollTo({ top: targetScrollY, behavior: 'smooth' });
+  }
+
+  const updateCoords = () => {
+    if (!popover.matches(':popover-open')) return;
+    const rect = targetEl.getBoundingClientRect();
+    const popRect = popover.getBoundingClientRect();
+    const popW = popRect.width || 400;
+    const popH = popRect.height || 210;
+    const margin = 16;
+
+    let left = rect.left + (rect.width / 2) - (popW / 2);
+    left = Math.max(margin, Math.min(left, window.innerWidth - popW - margin));
+
+    let top;
+    if (rect.height > window.innerHeight * 0.45) {
+      top = Math.max(headerOffset + 12, rect.top + 56);
+    } else if (rect.bottom + popH + margin <= window.innerHeight) {
+      top = rect.bottom + 14;
+    } else if (rect.top - popH - margin >= headerOffset) {
+      top = rect.top - popH - 14;
+    } else {
+      top = window.innerHeight - popH - margin;
+    }
+
+    top = Math.max(margin, Math.min(top, window.innerHeight - popH - margin));
+    popover.style.left = `${Math.round(left)}px`;
+    popover.style.top = `${Math.round(top)}px`;
+  };
+
+  requestAnimationFrame(updateCoords);
+  setTimeout(updateCoords, 260);
+}
+
 function renderAdminTourStep(index) {
   const popover = document.getElementById('app-tour-popover');
   if (!popover || index < 0 || index >= ADMIN_TOUR_STEPS.length) return;
@@ -513,7 +554,6 @@ function renderAdminTourStep(index) {
   const targetEl = document.querySelector(step.selector);
   if (targetEl) {
     targetEl.classList.add('tour-active-target');
-    targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   document.getElementById('tour-step-badge').textContent = `Schritt ${index + 1} von ${ADMIN_TOUR_STEPS.length}`;
@@ -544,8 +584,12 @@ function renderAdminTourStep(index) {
     } catch (_) {}
   }
 
+  if (targetEl) {
+    scrollAndPositionAdminTourPopover(popover, targetEl);
+  }
+
   if (nextBtn) {
-    nextBtn.focus();
+    nextBtn.focus({ preventScroll: true });
   }
 }
 
