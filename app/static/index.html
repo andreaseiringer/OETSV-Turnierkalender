@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>pivitLABS ÖTSV Tool – Turnierkalender</title>
-  <link rel="stylesheet" href="/static/css/style.css?v=1.4.7">
+  <link rel="stylesheet" href="/static/css/style.css?v=1.4.8">
 </head>
 <body>
   <h1 class="sr-only">pivitLABS ÖTSV Tool – Turnierkalender &amp; Nennungen</h1>
@@ -268,6 +268,32 @@
     </div>
   </footer>
 
+  <!-- pivitLABS Practice Studio Startup Promo Popover -->
+  <div id="practice-studio-popover" popover="auto" role="dialog" aria-labelledby="ps-popover-title" class="ps-promo-popover">
+    <button type="button" popovertarget="practice-studio-popover" popovertargetaction="hide" class="ps-popover-close" aria-label="Schließen">&times;</button>
+    <div class="ps-popover-badge">✨ Empfehlung für Turnierpaare &amp; Vereine</div>
+    <div class="ps-popover-logo-wrap">
+      <img src="/static/img/practice-studio-logo.png" alt="pivitLABS Practice Studio" class="ps-popover-logo" height="72">
+    </div>
+    <h2 id="ps-popover-title" class="ps-popover-title">Trainiere smarter mit dem pivitLABS Practice Studio</h2>
+    <p class="ps-popover-desc">
+      Die moderne Trainings-Plattform für Tanzsportler:innen – entwickelt für effektives Practice, Musik- &amp; Video-Analyse sowie gezielte Turniervorbereitung.
+    </p>
+    <ul class="ps-popover-features">
+      <li>🎵 <strong>Musik- &amp; Tempo-Kontrolle</strong> für Standard &amp; Latein</li>
+      <li>🎥 <strong>Video-Loops &amp; Analyse</strong> für Technik und Choreografie</li>
+      <li>🏆 <strong>Strukturiertes Turnier-Training</strong> für Paare &amp; Trainer:innen</li>
+    </ul>
+    <div class="ps-popover-actions">
+      <a href="https://www.pivitlabs.com/practice-studio" target="_blank" rel="noopener noreferrer" class="ps-popover-cta-btn">
+        Jetzt Practice Studio entdecken &nearr;
+      </a>
+      <button type="button" id="ps-popover-dismiss-btn" popovertarget="practice-studio-popover" popovertargetaction="hide" class="ps-popover-secondary-btn">
+        Weiter zum Turnierkalender
+      </button>
+    </div>
+  </div>
+
   <!-- Persistent Onboarding Tour Popover -->
   <div id="app-tour-popover" popover="manual" role="dialog" aria-labelledby="tour-title" class="tour-popover">
     <div class="tour-popover-header">
@@ -286,6 +312,6 @@
     </div>
   </div>
 
-  <script src="/static/js/app.js?v=1.4.7"></script>
+  <script src="/static/js/app.js?v=1.4.8"></script>
 </body>
 </html>

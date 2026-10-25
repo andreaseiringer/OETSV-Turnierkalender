@@ -1148,11 +1148,21 @@ function finishOnboardingTour() {
 }
 
 function startOnboardingTour() {
+  // Close Practice Studio promo popover if open so popovers don't overlap
+  const psPopover = document.getElementById('practice-studio-popover');
+  if (psPopover && typeof psPopover.hidePopover === 'function') {
+    try {
+      if (psPopover.matches(':popover-open')) {
+        psPopover.hidePopover();
+      }
+    } catch (_) {}
+  }
   renderTourStep(0);
 }
 
 function initOnboardingTour() {
   const popover = document.getElementById('app-tour-popover');
+  const psPopover = document.getElementById('practice-studio-popover');
   if (!popover) return;
 
   const startBtn = document.getElementById('btn-start-tour');
@@ -1194,8 +1204,23 @@ function initOnboardingTour() {
     }
   });
 
-  // Automatically start on first visit
-  if (!localStorage.getItem(TOUR_STORAGE_KEY)) {
+  // Show Practice Studio Promo Popover on EVERY start
+  if (psPopover && typeof psPopover.showPopover === 'function') {
+    // When the Practice Studio promo popover closes, auto-start the onboarding tour if it's the user's first visit
+    psPopover.addEventListener('beforetoggle', (e) => {
+      if (e.newState === 'closed' && !localStorage.getItem(TOUR_STORAGE_KEY)) {
+        setTimeout(() => startOnboardingTour(), 250);
+      }
+    });
+
+    setTimeout(() => {
+      try {
+        if (!psPopover.matches(':popover-open')) {
+          psPopover.showPopover();
+        }
+      } catch (_) {}
+    }, 250);
+  } else if (!localStorage.getItem(TOUR_STORAGE_KEY)) {
     setTimeout(() => startOnboardingTour(), 350);
   }
 }
