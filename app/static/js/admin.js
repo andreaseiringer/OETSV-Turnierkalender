@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initAdminTheme();
   setupAdminListeners();
   refreshAll();
+  initAdminOnboardingTour();
 
   // Auto refresh status every 10 seconds
   setInterval(loadAdminStatus, 10000);
@@ -465,5 +466,142 @@ async function saveClubConfig() {
     `;
   }
 }
+
+// ==========================================================================
+// Admin Onboarding Tour
+// ==========================================================================
+const ADMIN_TOUR_STORAGE_KEY = 'oetsv_admin_tour_v1';
+let currentAdminTourStep = 0;
+
+const ADMIN_TOUR_STEPS = [
+  {
+    selector: '.admin-grid',
+    title: 'System-KPIs & Überblick',
+    description: 'Hier siehst du auf einen Blick die aktuelle Anzahl gespeicherter Turniere, gemeldeter Vereinspaare, Startklassen, Ergebnisse und importierter Teilnehmer.'
+  },
+  {
+    selector: '#btn-trigger-scraper',
+    title: 'Manuelle Job-Steuerung',
+    description: 'Alle Scraper laufen automatisch im Hintergrund. Über diese Buttons kannst du den Turnierkalender, Teilnehmerlisten, Ergebnisse oder den Mail-Import jederzeit sofort manuell starten.'
+  },
+  {
+    selector: '#club-config-form',
+    title: 'Verein einstellen',
+    description: 'Trage hier deinen Vereinsnamen (z. B. „TSC Musterverein“) und das Kurz-Badge ein. Alle Teilnehmerlisten und Hervorhebungen im Portal passen sich beim Speichern sofort automatisch an!'
+  },
+  {
+    selector: '#imap-config-form',
+    title: 'IMAP E-Mail-Postfach & Mock-Modus',
+    description: 'Hinterlege hier optional das E-Mail-Postfach, an das ÖTSV-Nennungsbestätigungen gesendet werden – oder nutze den Mock-Modus zum sofortigen Testen mit Beispieldaten.'
+  }
+];
+
+function clearAdminTourHighlight() {
+  document.querySelectorAll('.tour-active-target').forEach(el => {
+    el.classList.remove('tour-active-target');
+  });
+}
+
+function renderAdminTourStep(index) {
+  const popover = document.getElementById('app-tour-popover');
+  if (!popover || index < 0 || index >= ADMIN_TOUR_STEPS.length) return;
+
+  currentAdminTourStep = index;
+  const step = ADMIN_TOUR_STEPS[index];
+
+  clearAdminTourHighlight();
+  const targetEl = document.querySelector(step.selector);
+  if (targetEl) {
+    targetEl.classList.add('tour-active-target');
+    targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  document.getElementById('tour-step-badge').textContent = `Schritt ${index + 1} von ${ADMIN_TOUR_STEPS.length}`;
+  document.getElementById('tour-title').textContent = step.title;
+  document.getElementById('tour-description').textContent = step.description;
+
+  const dotsContainer = document.getElementById('tour-dots');
+  if (dotsContainer) {
+    dotsContainer.innerHTML = ADMIN_TOUR_STEPS
+      .map((_, i) => `<span class="tour-dot ${i === index ? 'active' : ''}"></span>`)
+      .join('');
+  }
+
+  const prevBtn = document.getElementById('tour-prev-btn');
+  const nextBtn = document.getElementById('tour-next-btn');
+  if (prevBtn) {
+    prevBtn.style.display = index === 0 ? 'none' : 'inline-flex';
+  }
+  if (nextBtn) {
+    nextBtn.innerHTML = index === ADMIN_TOUR_STEPS.length - 1 ? 'Fertig &#10003;' : 'Weiter &rarr;';
+  }
+
+  if (typeof popover.showPopover === 'function') {
+    try {
+      if (!popover.matches(':popover-open')) {
+        popover.showPopover();
+      }
+    } catch (_) {}
+  }
+
+  if (nextBtn) {
+    nextBtn.focus();
+  }
+}
+
+function finishAdminOnboardingTour() {
+  clearAdminTourHighlight();
+  localStorage.setItem(ADMIN_TOUR_STORAGE_KEY, 'completed');
+  const popover = document.getElementById('app-tour-popover');
+  if (popover && typeof popover.hidePopover === 'function') {
+    try {
+      if (popover.matches(':popover-open')) {
+        popover.hidePopover();
+      }
+    } catch (_) {}
+  }
+}
+
+function initAdminOnboardingTour() {
+  const popover = document.getElementById('app-tour-popover');
+  if (!popover) return;
+
+  const startBtn = document.getElementById('btn-start-admin-tour');
+  if (startBtn) {
+    startBtn.addEventListener('click', () => renderAdminTourStep(0));
+  }
+
+  const prevBtn = document.getElementById('tour-prev-btn');
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => {
+      if (currentAdminTourStep > 0) {
+        renderAdminTourStep(currentAdminTourStep - 1);
+      }
+    });
+  }
+
+  const nextBtn = document.getElementById('tour-next-btn');
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+      if (currentAdminTourStep < ADMIN_TOUR_STEPS.length - 1) {
+        renderAdminTourStep(currentAdminTourStep + 1);
+      } else {
+        finishAdminOnboardingTour();
+      }
+    });
+  }
+
+  popover.addEventListener('beforetoggle', (e) => {
+    if (e.newState === 'closed') {
+      clearAdminTourHighlight();
+      localStorage.setItem(ADMIN_TOUR_STORAGE_KEY, 'completed');
+    }
+  });
+
+  if (!localStorage.getItem(ADMIN_TOUR_STORAGE_KEY)) {
+    setTimeout(() => renderAdminTourStep(0), 350);
+  }
+}
+
 
 

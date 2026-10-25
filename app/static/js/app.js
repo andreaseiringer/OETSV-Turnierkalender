@@ -35,8 +35,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
   setupEventListeners();
   await loadVersion();
-  loadTournaments();
+  await loadTournaments();
   loadSyncStatus();
+  initOnboardingTour();
 });
 
 // 1. Theme Management (FA-5.7)
@@ -989,3 +990,161 @@ function closeTeilnehmerModal() {
   const modal = document.getElementById('teilnehmer-modal');
   if (modal) modal.classList.remove('open');
 }
+
+// ==========================================================================
+// 11. Interactive First-Start Onboarding Tour
+// ==========================================================================
+const TOUR_STORAGE_KEY = 'oetsv_portal_tour_v1';
+let currentTourStepIndex = 0;
+
+function getPortalTourSteps() {
+  return [
+    {
+      selector: '#tour-target-brand',
+      title: 'Willkommen im pivitLABS ÖTSV Tool!',
+      description: `Dein lokales Tanzsport-Informationssystem für ${clubName}. Diese kurze Tour zeigt dir in 6 Schritten die wichtigsten Funktionen.`
+    },
+    {
+      selector: '.filter-card',
+      title: 'Suche & Schnellfilter',
+      description: 'Durchsuche alle ÖTSV-Turniere in Echtzeit oder filtere mit einem Klick nach Bundesland, Disziplin (Standard, Latein, Kombination), Altersklasse oder über „🏆 Nur mit Ergebnissen“.'
+    },
+    {
+      selector: '.sub-nav',
+      title: 'Aktuelle Turniere, Archiv & Live-Sync',
+      description: 'Wechsle zwischen kommenden Turnieren (inkl. 7-Tage-Rückblick aufs letzte Wochenende) und vergangenen Turnieren. Rechts siehst du den Status der automatischen Hintergrund-Jobs.'
+    },
+    {
+      selector: '.table-wrapper',
+      title: 'Turnierliste, Teilnehmer & Ergebnisse',
+      description: `Klicke bei einem Turnier auf „👥 Teilnehmer“, um alle Starter nach Klassen gruppiert zu sehen (${clubShort}-Paare werden gelb markiert!). Ein Klick auf das grüne Paar-Badge rechts öffnet eure Vereins-Nennungen und Medaillen/Platzierungen.`
+    },
+    {
+      selector: '#tour-target-admin-btn',
+      title: 'Admin Control Center & Verein einstellen',
+      description: 'Im Admin-Bereich (/adsi-admin) kannst du unter „Verein einstellen“ jederzeit deinen eigenen Vereinsnamen speichern, dein IMAP-Postfach verbinden und Scraper manuell anstoßen.'
+    },
+    {
+      selector: '#btn-start-tour',
+      title: 'Tour & Dark/Light Mode',
+      description: 'Über das Mond/Sonnen-Symbol wechselst du zwischen hellem und dunklem Design. Mit dem Button „Tour“ kannst du diese Einführung jederzeit erneut starten!'
+    }
+  ];
+}
+
+function clearTourTargetHighlight() {
+  document.querySelectorAll('.tour-active-target').forEach(el => {
+    el.classList.remove('tour-active-target');
+  });
+}
+
+function renderTourStep(index) {
+  const steps = getPortalTourSteps();
+  const popover = document.getElementById('app-tour-popover');
+  if (!popover || index < 0 || index >= steps.length) return;
+
+  currentTourStepIndex = index;
+  const step = steps[index];
+
+  clearTourTargetHighlight();
+  const targetEl = document.querySelector(step.selector);
+  if (targetEl) {
+    targetEl.classList.add('tour-active-target');
+    targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  document.getElementById('tour-step-badge').textContent = `Schritt ${index + 1} von ${steps.length}`;
+  document.getElementById('tour-title').textContent = step.title;
+  document.getElementById('tour-description').textContent = step.description;
+
+  const dotsContainer = document.getElementById('tour-dots');
+  if (dotsContainer) {
+    dotsContainer.innerHTML = steps
+      .map((_, i) => `<span class="tour-dot ${i === index ? 'active' : ''}"></span>`)
+      .join('');
+  }
+
+  const prevBtn = document.getElementById('tour-prev-btn');
+  const nextBtn = document.getElementById('tour-next-btn');
+  if (prevBtn) {
+    prevBtn.style.display = index === 0 ? 'none' : 'inline-flex';
+  }
+  if (nextBtn) {
+    nextBtn.innerHTML = index === steps.length - 1 ? 'Fertig &#10003;' : 'Weiter &rarr;';
+  }
+
+  if (typeof popover.showPopover === 'function') {
+    try {
+      if (!popover.matches(':popover-open')) {
+        popover.showPopover();
+      }
+    } catch (_) {}
+  }
+
+  // MANDATORY: Programmatically route focus into the non-modal popover
+  if (nextBtn) {
+    nextBtn.focus();
+  }
+}
+
+function finishOnboardingTour() {
+  clearTourTargetHighlight();
+  localStorage.setItem(TOUR_STORAGE_KEY, 'completed');
+  const popover = document.getElementById('app-tour-popover');
+  if (popover && typeof popover.hidePopover === 'function') {
+    try {
+      if (popover.matches(':popover-open')) {
+        popover.hidePopover();
+      }
+    } catch (_) {}
+  }
+}
+
+function startOnboardingTour() {
+  renderTourStep(0);
+}
+
+function initOnboardingTour() {
+  const popover = document.getElementById('app-tour-popover');
+  if (!popover) return;
+
+  const startBtn = document.getElementById('btn-start-tour');
+  if (startBtn) {
+    startBtn.addEventListener('click', () => startOnboardingTour());
+  }
+
+  const prevBtn = document.getElementById('tour-prev-btn');
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => {
+      if (currentTourStepIndex > 0) {
+        renderTourStep(currentTourStepIndex - 1);
+      }
+    });
+  }
+
+  const nextBtn = document.getElementById('tour-next-btn');
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+      const steps = getPortalTourSteps();
+      if (currentTourStepIndex < steps.length - 1) {
+        renderTourStep(currentTourStepIndex + 1);
+      } else {
+        finishOnboardingTour();
+      }
+    });
+  }
+
+  // Clean up highlight and persist completion when closed via popovertargetaction="hide"
+  popover.addEventListener('beforetoggle', (e) => {
+    if (e.newState === 'closed') {
+      clearTourTargetHighlight();
+      localStorage.setItem(TOUR_STORAGE_KEY, 'completed');
+    }
+  });
+
+  // Automatically start on first visit
+  if (!localStorage.getItem(TOUR_STORAGE_KEY)) {
+    setTimeout(() => startOnboardingTour(), 350);
+  }
+}
+

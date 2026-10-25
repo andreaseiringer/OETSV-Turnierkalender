@@ -4,14 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>pivitLABS ÖTSV Tool – Turnierkalender</title>
-  <link rel="stylesheet" href="/static/css/style.css?v=1.4.4">
+  <link rel="stylesheet" href="/static/css/style.css?v=1.4.5">
 </head>
 <body>
+  <h1 class="sr-only">pivitLABS ÖTSV Tool – Turnierkalender &amp; Nennungen</h1>
 
   <!-- Header -->
   <header class="app-header">
     <div class="container header-inner">
-      <a href="/" class="brand">
+      <a href="/" class="brand" id="tour-target-brand">
         <img src="/static/img/pivitlabs-logo.png" alt="pivitLABS" class="brand-logo" height="50">
         <div>
           <div class="brand-title">ÖTSV Tool</div>
@@ -30,7 +31,15 @@
 
       <div class="header-actions">
         <span id="app-version-badge" class="badge-count">v1.4.0</span>
-        <a href="/adsi-admin" class="btn-nav" title="Admin Control Center">
+        <button id="btn-start-tour" type="button" class="btn-nav" title="Interaktive Einführung starten">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          Tour
+        </button>
+        <a href="/adsi-admin" id="tour-target-admin-btn" class="btn-nav" title="Admin Control Center">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="3" width="7" height="7"></rect>
             <rect x="14" y="3" width="7" height="7"></rect>
@@ -259,6 +268,24 @@
     </div>
   </footer>
 
-  <script src="/static/js/app.js?v=1.4.0"></script>
+  <!-- Persistent Onboarding Tour Popover -->
+  <div id="app-tour-popover" popover="manual" role="dialog" aria-labelledby="tour-title" class="tour-popover">
+    <div class="tour-popover-header">
+      <span id="tour-step-badge" class="tour-step-badge">Schritt 1 von 6</span>
+      <button id="tour-close-btn" type="button" popovertarget="app-tour-popover" popovertargetaction="hide" class="tour-close-btn" aria-label="Tour beenden">&times;</button>
+    </div>
+    <h2 id="tour-title" class="tour-title">Willkommen im pivitLABS ÖTSV Tool</h2>
+    <p id="tour-description" class="tour-description"></p>
+    <div class="tour-footer">
+      <div id="tour-dots" class="tour-dots" aria-hidden="true"></div>
+      <div class="tour-actions">
+        <button id="tour-prev-btn" type="button" class="chip-btn">Zurück</button>
+        <button id="tour-skip-btn" type="button" popovertarget="app-tour-popover" popovertargetaction="hide" class="btn-reset">Beenden</button>
+        <button id="tour-next-btn" type="button" class="tour-btn-primary">Weiter &rarr;</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js?v=1.4.5"></script>
 </body>
 </html>
