@@ -55,6 +55,23 @@ function setupAdminListeners() {
   document.getElementById('btn-refresh-logs').addEventListener('click', loadLogs);
   document.getElementById('btn-refresh-data').addEventListener('click', loadDataInspector);
 
+  // Storage & Cloud Config buttons
+  const reloadStorageBtn = document.getElementById('btn-reload-storage-config');
+  if (reloadStorageBtn) reloadStorageBtn.addEventListener('click', loadStorageConfig);
+  const saveStorageBtn = document.getElementById('btn-save-storage-cfg');
+  if (saveStorageBtn) saveStorageBtn.addEventListener('click', saveStorageConfig);
+  const manualSyncBtn = document.getElementById('btn-manual-cloud-sync');
+  if (manualSyncBtn) manualSyncBtn.addEventListener('click', triggerManualCloudSync);
+  const browseAdminBtn = document.getElementById('btn-admin-browse-folder');
+  if (browseAdminBtn) browseAdminBtn.addEventListener('click', browseAdminCloudFolder);
+
+  document.querySelectorAll('input[name="admin-storage-mode"]').forEach(r => {
+    r.addEventListener('change', () => {
+      const isCloud = r.value === 'cloud' && r.checked;
+      updateAdminStorageModeUI(isCloud);
+    });
+  });
+
   // Club Config ("Verein einstellen") buttons
   const reloadClubBtn = document.getElementById('btn-reload-club-config');
   if (reloadClubBtn) reloadClubBtn.addEventListener('click', loadClubConfig);
@@ -70,6 +87,7 @@ function setupAdminListeners() {
 async function refreshAll() {
   await Promise.all([
     loadAdminStatus(),
+    loadStorageConfig(),
     loadClubConfig(),
     loadImapConfig(),
     loadLogs(),
@@ -468,6 +486,184 @@ async function saveClubConfig() {
 }
 
 // ==========================================================================
+// Storage & Cloud Synchronization Configuration
+// ==========================================================================
+function updateAdminStorageModeUI(isCloud) {
+  const localCard = document.getElementById('admin-card-local');
+  const cloudCard = document.getElementById('admin-card-cloud');
+  const cloudPanel = document.getElementById('admin-cloud-details');
+  const syncBtn = document.getElementById('btn-manual-cloud-sync');
+
+  if (localCard) localCard.classList.toggle('active', !isCloud);
+  if (cloudCard) cloudCard.classList.toggle('active', isCloud);
+  if (cloudPanel) cloudPanel.style.display = isCloud ? 'block' : 'none';
+  if (syncBtn) syncBtn.style.display = isCloud ? 'inline-flex' : 'none';
+}
+
+function showStorageAlert(type, message) {
+  const box = document.getElementById('storage-config-alert');
+  if (!box) return;
+  box.className = `alert-box ${type}`;
+  box.textContent = message;
+  box.style.display = 'block';
+}
+
+async function loadStorageConfig() {
+  try {
+    const res = await fetch('/adsi-admin/api/config/storage');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    const isCloud = data.storage_mode === 'cloud';
+    const radios = document.querySelectorAll('input[name="admin-storage-mode"]');
+    radios.forEach(r => {
+      r.checked = (r.value === data.storage_mode);
+    });
+    updateAdminStorageModeUI(isCloud);
+
+    const pill = document.getElementById('cfg-storage-status-pill');
+    if (pill) {
+      if (isCloud) {
+        pill.textContent = data.read_only_cloud ? '☁️ Cloud (Nur-Lesen)' : '☁️ Cloud aktiv';
+      } else {
+        pill.textContent = '💻 Lokal';
+      }
+    }
+
+    const dirInput = document.getElementById('cfg-cloud-dir');
+    if (dirInput) dirInput.value = data.cloud_dir || '';
+
+    const imapToggle = document.getElementById('cfg-storage-sync-imap');
+    if (imapToggle) imapToggle.checked = Boolean(data.sync_imap);
+
+    const localDbEl = document.getElementById('cfg-local-db-path');
+    if (localDbEl) localDbEl.textContent = data.local_db_path || 'data/adsi.db';
+
+    const lastSyncEl = document.getElementById('cfg-cloud-last-sync');
+    if (lastSyncEl) lastSyncEl.textContent = data.last_sync || 'Noch nie';
+
+    const providersWrap = document.getElementById('admin-detected-providers');
+    if (providersWrap) {
+      if (data.detected_providers && data.detected_providers.length > 0) {
+        providersWrap.innerHTML = data.detected_providers.map(p => `
+          <button type="button" class="provider-chip-btn" data-path="${escapeHtml(p.suggested_path)}">
+            ☁️ ${escapeHtml(p.name)}${p.existing_db ? ' (DB vorhanden ✓)' : ''}
+          </button>
+        `).join('');
+        providersWrap.querySelectorAll('.provider-chip-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.getElementById('cfg-cloud-dir').value = btn.getAttribute('data-path');
+          });
+        });
+      } else {
+        providersWrap.innerHTML = '<span style="font-size:0.78rem; color:var(--text-muted);">Keine Standard-Cloud-Ordner automatisch erkannt – bitte über „Ordner auswählen…“ wählen.</span>';
+      }
+    }
+
+    if (data.last_error) {
+      showStorageAlert('error', data.last_error);
+    }
+  } catch (err) {
+    showStorageAlert('error', `Fehler beim Laden des Speicherorts: ${err.message}`);
+  }
+}
+
+async function browseAdminCloudFolder() {
+  const btn = document.getElementById('btn-admin-browse-folder');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = 'Öffne Dialog…';
+  try {
+    const res = await fetch('/adsi-admin/api/config/storage/browse', { method: 'POST' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.selected_path) {
+        document.getElementById('cfg-cloud-dir').value = data.selected_path;
+      }
+    }
+  } catch (err) {
+    showStorageAlert('error', `Ordner-Dialog konnte nicht geöffnet werden: ${err.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📂 Ordner auswählen…';
+  }
+}
+
+async function saveStorageConfig() {
+  const saveBtn = document.getElementById('btn-save-storage-cfg');
+  const selectedRadio = document.querySelector('input[name="admin-storage-mode"]:checked');
+  const mode = selectedRadio ? selectedRadio.value : 'local';
+  const cloudDir = (document.getElementById('cfg-cloud-dir')?.value || '').trim();
+  const syncImap = Boolean(document.getElementById('cfg-storage-sync-imap')?.checked);
+
+  if (mode === 'cloud' && !cloudDir) {
+    showStorageAlert('error', 'Bitte gib einen gültigen Cloud-Ordnerpfad an oder wähle einen Ordner aus.');
+    return;
+  }
+
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Speichere…';
+  }
+
+  try {
+    const res = await fetch('/adsi-admin/api/config/storage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        storage_mode: mode,
+        cloud_dir: cloudDir,
+        sync_imap: syncImap,
+        force_lock: false
+      })
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || `HTTP ${res.status}`);
+    }
+    const updated = await res.json();
+    if (updated.storage_mode === 'cloud') {
+      showStorageAlert('success', `Cloud-Speicherort aktiviert (${updated.cloud_dir}). Datenbank & Vereinsdaten sind synchronisiert!`);
+    } else {
+      showStorageAlert('success', 'Lokaler Speichermodus aktiviert.');
+    }
+    await refreshAll();
+  } catch (err) {
+    showStorageAlert('error', `Fehler beim Speichern des Speicherorts: ${err.message}`);
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Speicherort speichern';
+    }
+  }
+}
+
+async function triggerManualCloudSync() {
+  const btn = document.getElementById('btn-manual-cloud-sync');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Synchronisiere…';
+  }
+  try {
+    const res = await fetch('/adsi-admin/api/config/storage/sync', { method: 'POST' });
+    const data = await res.json();
+    if (data.status === 'ok') {
+      showStorageAlert('success', data.message || 'Cloud-Synchronisation erfolgreich.');
+    } else {
+      showStorageAlert('error', data.message || 'Synchronisation fehlgeschlagen.');
+    }
+    await loadStorageConfig();
+  } catch (err) {
+    showStorageAlert('error', `Fehler bei der Cloud-Synchronisation: ${err.message}`);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '🔄 Jetzt mit Cloud synchronisieren';
+    }
+  }
+}
+
+// ==========================================================================
 // Admin Onboarding Tour
 // ==========================================================================
 const ADMIN_TOUR_STORAGE_KEY = 'oetsv_admin_tour_v1';
@@ -483,6 +679,11 @@ const ADMIN_TOUR_STEPS = [
     selector: '#btn-trigger-scraper',
     title: 'Manuelle Job-Steuerung',
     description: 'Alle Scraper laufen automatisch im Hintergrund. Über diese Buttons kannst du den Turnierkalender, Teilnehmerlisten, Ergebnisse oder den Mail-Import jederzeit sofort manuell starten.'
+  },
+  {
+    selector: '#storage-config-card',
+    title: 'Datenspeicher & Cloud-Sync',
+    description: 'Wähle hier, ob die Datenbank lokal oder in einem Cloud-Ordner (iCloud Drive, Google Drive, OneDrive) liegt. Vereinsdaten werden immer mitgespeichert, IMAP-Daten optional per Schalter.'
   },
   {
     selector: '#club-config-form',

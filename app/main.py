@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import init_db
 from app.services.log_service import setup_logging
+from app.services.storage_service import pull_from_cloud, shutdown_storage
 from app.scheduler import start_scheduler, shutdown_scheduler
 from app.api.public import router as public_router
 from app.api.admin import router as admin_router
@@ -16,11 +17,13 @@ from app.api.admin import router as admin_router
 async def lifespan(app: FastAPI):
     # Startup
     setup_logging()
+    pull_from_cloud()
     init_db()
     start_scheduler()
     yield
     # Shutdown
     shutdown_scheduler()
+    shutdown_storage()
 
 app = FastAPI(
     title="pivitLABS ÖTSV Tool",
@@ -51,6 +54,20 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 @app.get("/", include_in_schema=False)
 async def serve_index():
     return FileResponse(os.path.join(static_dir, "index.html"))
+
+@app.get("/manifest.webmanifest", include_in_schema=False)
+async def serve_manifest():
+    return FileResponse(
+        os.path.join(static_dir, "manifest.webmanifest"),
+        media_type="application/manifest+json"
+    )
+
+@app.get("/sw.js", include_in_schema=False)
+async def serve_service_worker():
+    return FileResponse(
+        os.path.join(static_dir, "sw.js"),
+        media_type="application/javascript"
+    )
 
 if __name__ == "__main__":
     import uvicorn

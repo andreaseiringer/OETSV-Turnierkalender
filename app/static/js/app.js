@@ -33,12 +33,20 @@ const BUNDESLAND_MAPPINGS = {
 
 document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
+  registerServiceWorker();
   setupEventListeners();
+  setupStorageDialogsListeners();
   await loadVersion();
   await loadTournaments();
   loadSyncStatus();
   initOnboardingTour();
 });
+
+function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+}
 
 // 1. Theme Management (FA-5.7)
 function initTheme() {
@@ -288,8 +296,195 @@ async function loadVersion() {
       if (subEl && clubName) {
         subEl.textContent = `${clubName} • Turnierkalender & Nennungen`;
       }
+
+      const modeBadge = document.getElementById('storage-mode-badge');
+      if (modeBadge) {
+        if (data.storage_mode === 'cloud') {
+          modeBadge.style.display = 'inline-block';
+          modeBadge.textContent = data.read_only_cloud ? '☁️ Cloud (Nur-Lesen)' : '☁️ Cloud-Sync';
+        } else {
+          modeBadge.style.display = 'none';
+        }
+      }
+
+      // 1. Check for Multi-PC Lock Conflict
+      if (data.lock_conflict && data.lock_holder) {
+        openLockConflictDialog(data.lock_holder);
+      } else if (data.setup_completed === false) {
+        // 2. Check for First-Run Storage Setup Wizard
+        await openFirstRunStorageDialog();
+      }
     }
   } catch (_) {}
+}
+
+function setupStorageDialogsListeners() {
+  const radios = document.querySelectorAll('input[name="setup-storage-mode"]');
+  const localCard = document.getElementById('setup-card-local');
+  const cloudCard = document.getElementById('setup-card-cloud');
+  const cloudDetails = document.getElementById('setup-cloud-details');
+
+  radios.forEach(r => {
+    r.addEventListener('change', () => {
+      const isCloud = r.value === 'cloud' && r.checked;
+      if (localCard) localCard.classList.toggle('active', !isCloud);
+      if (cloudCard) cloudCard.classList.toggle('active', isCloud);
+      if (cloudDetails) cloudDetails.style.display = isCloud ? 'block' : 'none';
+    });
+  });
+
+  const browseBtn = document.getElementById('btn-setup-browse-folder');
+  if (browseBtn) {
+    browseBtn.addEventListener('click', async () => {
+      browseBtn.disabled = true;
+      browseBtn.textContent = 'Öffne Dialog…';
+      try {
+        const res = await fetch('/api/storage-setup/browse', { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.selected_path) {
+            document.getElementById('setup-cloud-dir').value = data.selected_path;
+          }
+        }
+      } catch (_) {
+      } finally {
+        browseBtn.disabled = false;
+        browseBtn.textContent = '📂 Ordner wählen…';
+      }
+    });
+  }
+
+  const saveBtn = document.getElementById('btn-setup-save');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', saveFirstRunStorageSetup);
+  }
+
+  const roBtn = document.getElementById('btn-lock-readonly');
+  if (roBtn) {
+    roBtn.addEventListener('click', () => resolveLockConflict('read_only'));
+  }
+
+  const takeBtn = document.getElementById('btn-lock-takeover');
+  if (takeBtn) {
+    takeBtn.addEventListener('click', () => resolveLockConflict('takeover'));
+  }
+}
+
+async function openFirstRunStorageDialog() {
+  const dlg = document.getElementById('storage-setup-dialog');
+  if (!dlg || typeof dlg.showModal !== 'function') return;
+
+  try {
+    const res = await fetch('/api/storage-setup');
+    if (res.ok) {
+      const cfg = await res.json();
+      const providersWrap = document.getElementById('setup-detected-providers');
+      if (providersWrap) {
+        if (cfg.detected_providers && cfg.detected_providers.length > 0) {
+          providersWrap.innerHTML = cfg.detected_providers.map(p => `
+            <button type="button" class="provider-chip-btn" data-path="${escapeHtml(p.suggested_path)}">
+              ☁️ ${escapeHtml(p.name)}${p.existing_db ? ' (DB vorhanden ✓)' : ''}
+            </button>
+          `).join('');
+          providersWrap.querySelectorAll('.provider-chip-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              document.getElementById('setup-cloud-dir').value = btn.getAttribute('data-path');
+            });
+          });
+        } else {
+          providersWrap.innerHTML = '<span style="font-size:0.78rem; color:var(--text-muted);">Kein Standard-Cloud-Ordner automatisch erkannt – bitte über „Ordner wählen…“ auswählen.</span>';
+        }
+      }
+    }
+  } catch (_) {}
+
+  if (!dlg.open) {
+    dlg.showModal();
+  }
+}
+
+async function saveFirstRunStorageSetup() {
+  const dlg = document.getElementById('storage-setup-dialog');
+  const alertBox = document.getElementById('storage-setup-alert');
+  const saveBtn = document.getElementById('btn-setup-save');
+  const selectedRadio = document.querySelector('input[name="setup-storage-mode"]:checked');
+  const mode = selectedRadio ? selectedRadio.value : 'local';
+  const cloudDir = (document.getElementById('setup-cloud-dir')?.value || '').trim();
+  const syncImap = Boolean(document.getElementById('setup-sync-imap')?.checked);
+
+  if (mode === 'cloud' && !cloudDir) {
+    if (alertBox) {
+      alertBox.className = 'alert-box error';
+      alertBox.textContent = 'Bitte wähle einen Cloud-Ordner aus oder klicke auf einen der erkannten Cloud-Dienste.';
+      alertBox.style.display = 'block';
+    }
+    return;
+  }
+
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Richte Speicherort ein…';
+  }
+
+  try {
+    const res = await fetch('/api/storage-setup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        storage_mode: mode,
+        cloud_dir: cloudDir,
+        sync_imap: syncImap,
+        force_lock: false
+      })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+    if (dlg && dlg.open) dlg.close();
+    await loadVersion();
+    await loadTournaments();
+    await loadSyncStatus();
+  } catch (e) {
+    if (alertBox) {
+      alertBox.className = 'alert-box error';
+      alertBox.textContent = e.message;
+      alertBox.style.display = 'block';
+    }
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Speicherort übernehmen & starten';
+    }
+  }
+}
+
+function openLockConflictDialog(holder) {
+  const dlg = document.getElementById('lock-conflict-dialog');
+  if (!dlg || typeof dlg.showModal !== 'function') return;
+  const desc = document.getElementById('lock-conflict-desc');
+  if (desc && holder) {
+    desc.textContent = `Das Gerät „${holder.hostname || 'Unbekannt'}“ nutzt diesen Cloud-Ordner seit ${holder.started_at || 'kurzem'}.`;
+  }
+  if (!dlg.open) {
+    dlg.showModal();
+  }
+}
+
+async function resolveLockConflict(action) {
+  const dlg = document.getElementById('lock-conflict-dialog');
+  try {
+    await fetch('/api/storage-setup/resolve-lock', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action })
+    });
+    if (dlg && dlg.open) dlg.close();
+    await loadVersion();
+    await loadTournaments();
+  } catch (_) {
+    if (dlg && dlg.open) dlg.close();
+  }
 }
 
 // 4. Filtering & Rendering (FA-5.2, FA-5.3, FA-5.4)
@@ -1204,9 +1399,8 @@ function initOnboardingTour() {
     }
   });
 
-  // Show Practice Studio Promo Popover on EVERY start
+  // Show Practice Studio Promo Popover on start (unless a modal setup dialog is open)
   if (psPopover && typeof psPopover.showPopover === 'function') {
-    // When the Practice Studio promo popover closes, auto-start the onboarding tour if it's the user's first visit
     psPopover.addEventListener('beforetoggle', (e) => {
       if (e.newState === 'closed' && !localStorage.getItem(TOUR_STORAGE_KEY)) {
         setTimeout(() => startOnboardingTour(), 250);
@@ -1214,12 +1408,17 @@ function initOnboardingTour() {
     });
 
     setTimeout(() => {
+      const setupDlg = document.getElementById('storage-setup-dialog');
+      const lockDlg = document.getElementById('lock-conflict-dialog');
+      if ((setupDlg && setupDlg.open) || (lockDlg && lockDlg.open)) {
+        return;
+      }
       try {
         if (!psPopover.matches(':popover-open')) {
           psPopover.showPopover();
         }
       } catch (_) {}
-    }, 250);
+    }, 350);
   } else if (!localStorage.getItem(TOUR_STORAGE_KEY)) {
     setTimeout(() => startOnboardingTour(), 350);
   }

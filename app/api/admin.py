@@ -13,6 +13,7 @@ from app.config import settings
 from app.database import get_db_connection
 from app.services.log_service import get_logs
 from app.services import config_service
+from app.services import storage_service
 from app.services.teilnehmer_scraper import recalculate_teilnehmer_club_matches
 from app.scheduler import (
     get_job_info, execute_scraper_job, execute_fetcher_job,
@@ -20,7 +21,8 @@ from app.scheduler import (
 )
 from app.models import (
     AdminStatusModel, SyncStatusModel, ChangelogEntry,
-    ImapConfigModel, ImapConfigUpdateModel, ClubConfigModel, ClubConfigUpdateModel
+    ImapConfigModel, ImapConfigUpdateModel, ClubConfigModel, ClubConfigUpdateModel,
+    StorageConfigModel, StorageConfigUpdateModel, StorageLockResolveModel
 )
 
 security = HTTPBasic(auto_error=False)
@@ -41,6 +43,16 @@ def verify_admin_auth(credentials: Optional[HTTPBasicCredentials] = Depends(secu
 router = APIRouter(prefix="/adsi-admin", tags=["admin"], dependencies=[Depends(verify_admin_auth)])
 
 CHANGELOG: List[Dict[str, Any]] = [
+    {
+        "version": "1.5.0",
+        "date": "25.10.2026",
+        "changes": [
+            "Eigenständige Desktop-App (pywebview WebView & Progressive Web App) ohne Browser-Adressleiste mit sauberem Shutdown beim Schließen des Fensters.",
+            "Cloud-Datenbank-Unterstützung (iCloud Drive, Google Drive, OneDrive & eigene Ordner) nach dem Arbeitskopie-Prinzip inkl. Mehrgeräte-Sperrschutz (adsi.lock).",
+            "Automatische Synchronisation von SQLite-Datenbank und Vereinseinstellungen im Cloud-Ordner sowie optionale Mitnahme der IMAP-Einstellungen per Schalter.",
+            "Ersteinrichtungs-Assistent beim ersten Start und neue Speicherort-Verwaltung im Admin-Center sowie native Installer (.dmg für macOS & Setup.exe für Windows)."
+        ]
+    },
     {
         "version": "1.4.0",
         "date": "16.10.2026",
@@ -326,6 +338,9 @@ def update_imap_config(data: ImapConfigUpdateModel):
     settings.IMAP_ALLOWED_SENDERS = data.imap_allowed_senders
     settings.IMAP_MOCK = data.imap_mock
 
+    # Sync updated settings to cloud if cloud storage is active
+    storage_service.push_to_cloud(reason="imap_config")
+
     return ImapConfigModel(
         imap_enabled=settings.IMAP_ENABLED,
         imap_server=settings.IMAP_SERVER,
@@ -416,11 +431,60 @@ def update_club_config(data: ClubConfigUpdateModel):
     # Immediately update existing participant list highlights in DB
     recalculate_teilnehmer_club_matches()
 
+    # Sync updated club config & DB to cloud if cloud storage is active
+    storage_service.push_to_cloud(reason="club_config")
+
     return ClubConfigModel(
         club_name=settings.CLUB_NAME,
         club_short=settings.club_short_label,
         club_keywords=settings.CLUB_KEYWORDS,
         effective_tokens=settings.club_matching_tokens
     )
+
+
+@router.get("/api/config/storage", response_model=StorageConfigModel)
+def get_storage_config():
+    """Retrieve current storage mode, cloud folder, lock status, and detected cloud providers."""
+    return StorageConfigModel(**storage_service.get_storage_status())
+
+
+@router.post("/api/config/storage", response_model=StorageConfigModel)
+def update_storage_config(data: StorageConfigUpdateModel):
+    """Configure local or cloud storage folder and sync settings."""
+    try:
+        status_dict = storage_service.configure_storage(
+            storage_mode=data.storage_mode,
+            cloud_dir=data.cloud_dir,
+            sync_imap=data.sync_imap,
+            force_lock=data.force_lock,
+        )
+        return StorageConfigModel(**status_dict)
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Speicherort konnte nicht eingerichtet werden: {e}")
+
+
+@router.post("/api/config/storage/sync")
+def trigger_manual_cloud_sync():
+    """Manually push the local working copy to the configured cloud folder."""
+    res = storage_service.push_to_cloud(reason="manual")
+    return res
+
+
+@router.post("/api/config/storage/browse")
+def browse_cloud_folder():
+    """Open a native OS folder selection dialog and return the chosen path."""
+    cfg = storage_service.load_storage_settings()
+    chosen = storage_service.open_native_folder_dialog(initial_dir=cfg.get("cloud_dir", ""))
+    return {"selected_path": chosen}
+
+
+@router.post("/api/config/storage/resolve-lock", response_model=StorageConfigModel)
+def resolve_storage_lock(data: StorageLockResolveModel):
+    """Resolve an active multi-device lock conflict ('read_only' or 'takeover')."""
+    status_dict = storage_service.resolve_lock_conflict(action=data.action)
+    return StorageConfigModel(**status_dict)
+
 
 

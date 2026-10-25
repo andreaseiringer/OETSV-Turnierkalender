@@ -132,7 +132,7 @@ def test_admin_changelog(client):
     assert res.status_code == 200
     changelog = res.json()
     assert len(changelog) >= 1
-    assert changelog[0]["version"] == "1.4.0"
+    assert changelog[0]["version"] == "1.5.0"
 
 def test_admin_password_protection(client, monkeypatch):
     monkeypatch.setattr("app.config.settings.ADMIN_PASSWORD", "super_secret_admin_pw")

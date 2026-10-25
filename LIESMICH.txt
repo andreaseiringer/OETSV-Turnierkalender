@@ -1,44 +1,45 @@
 ========================================================================
-  pivitLABS ÖTSV Tool – Installations- & Startanleitung
+  pivitLABS ÖTSV Tool – Installations- & Startanleitung (v1.5.0)
   Copyright pivitlabs (https://pivitlabs.com)
 ========================================================================
 
 Vielen Dank für das Herunterladen des pivitLABS ÖTSV Tools!
+Das Tool läuft als eigenständige Desktop-App (App-Fenster ohne Browser-Leiste)
+und unterstützt sowohl lokale Speicherung als auch Cloud-Ordner (iCloud Drive,
+Google Drive, OneDrive).
 
-SO EINFACH STARTEST DU DAS TOOL:
+SO INSTALLIERST & STARTEST DU DIE APP:
 ------------------------------------------------------------------------
 
-[macOS – Eigenständige App]
-1. Entpacke die ZIP-Datei (oder öffne die DMG-Datei).
-2. Ziehe "pivitLABS OETSV Tool.app" in deinen "Programme"-Ordner oder
-   direkt auf deinen Schreibtisch (Desktop).
-3. Doppelklicke auf "pivitLABS OETSV Tool.app".
+[macOS – DMG Installer / Eigenständige App]
+1. Öffne "pivitLABS-OETSV-Tool-macOS.dmg" (oder entpacke die ZIP-Datei).
+2. Ziehe "pivitLABS OETSV Tool.app" in deinen "Programme"-Ordner (Applications).
+3. Starte "pivitLABS OETSV Tool.app" aus dem Programme-Ordner oder Launchpad.
    -> Hinweis beim allerersten Start auf macOS:
       Falls macOS meldet, dass der Entwickler nicht verifiziert werden kann,
       mache einmalig einen Rechtsklick (Ctrl+Klick) auf das App-Symbol und
       wähle "Öffnen" -> "Öffnen".
-4. Dein Browser öffnet sich automatisch unter http://127.0.0.1:8000
+4. Die App öffnet sich als eigenständiges Programmfenster. Beim Schließen des
+   Fensters wird die Datenbank automatisch gesichert und der Server beendet.
 
-[Windows – Eigenständige App (.exe)]
-1. Entpacke die ZIP-Datei in einen beliebigen Ordner (z.B. Dokumente).
-2. Doppelklicke auf "Desktop-Icon-erstellen.vbs" (legt automatisch ein
-   Start-Symbol auf deinem Desktop an) ODER starte direkt
-   "pivitLABS OETSV Tool.exe".
-3. Dein Browser öffnet sich automatisch unter http://127.0.0.1:8000
-
-[Universal-Paket (Windows & Mac mit installiertem Python 3.10+)]
-- Windows: Doppelklick auf "Start_OETSV_Tool.bat"
-  (oder "Desktop-Icon-erstellen.vbs" für ein Desktop-Symbol).
-- macOS:   Doppelklick auf "Start_OETSV_Tool.command".
+[Windows – Setup-Installer (.exe) oder Portable ZIP]
+1. Starte "pivitLABS-OETSV-Tool-Windows-Setup.exe" und folge dem Assistenten
+   (legt automatisch ein Startmenü- & Desktop-Symbol an).
+   Alternativ im ZIP-Paket: Starte "pivitLABS OETSV Tool.exe".
+2. Die App öffnet sich als eigenständiges Programmfenster.
 
 ------------------------------------------------------------------------
-VEREIN EINSTELLEN & DATENSPEICHERUNG:
+CLOUD-SPEICHER (iCloud Drive, Google Drive, OneDrive) & VEREIN:
 ------------------------------------------------------------------------
-- Öffne im Browser das Admin-Center: http://127.0.0.1:8000/adsi-admin
-- Unter "Verein einstellen" kannst du deinen Vereinsnamen (z.B.
-  "TSC Musterverein"), das Badge-Kürzel und dein IMAP-Postfach eintragen.
-- ALLE DATEN BLEIBEN DAUERHAFT GESPEICHERT:
-  * macOS App:   ~/Library/Application Support/pivitLABS-OETSV-Tool/
-  * Windows App: %APPDATA%\pivitLABS-OETSV-Tool\
-  * Universal:   Direkt im Unterordner data/adsi.db und .env
+- Beim ersten Start (sowie jederzeit im Admin-Center unter "Datenspeicher &
+  Cloud-Synchronisation") kannst du wählen:
+  * Lokal auf diesem Gerät
+  * Cloud-Ordner (iCloud Drive, Google Drive, OneDrive oder eigener Ordner)
+- Arbeitskopie-Prinzip:
+  Beim Start lädt die App die Datenbank in eine schnelle lokale Arbeitskopie
+  und speichert sie nach jedem Abruf sowie beim Schließen des Fensters als
+  konsistente Einzeldatei (adsi.db) zurück in deinen Cloud-Ordner.
+- Im Cloud-Ordner werden standardmäßig die SQLite-Datenbank (adsi.db) und
+  deine Vereinseinstellungen (cloud_config.json) abgelegt. Optional kannst du
+  per Schalter auch die IMAP-Postfach-Einstellungen in der Cloud mitspeichern.
 ========================================================================

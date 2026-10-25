@@ -140,4 +140,36 @@ class ClubConfigUpdateModel(BaseModel):
     club_short: str = ""
     club_keywords: str = ""
 
+class CloudProviderModel(BaseModel):
+    id: str
+    name: str
+    base_path: str
+    suggested_path: str
+    existing_db: bool = False
+
+class StorageConfigModel(BaseModel):
+    setup_completed: bool = False
+    storage_mode: str = "local"
+    cloud_dir: str = ""
+    sync_imap: bool = False
+    local_db_path: str = ""
+    cloud_db_exists: bool = False
+    cloud_config_exists: bool = False
+    last_sync: Optional[str] = None
+    last_error: Optional[str] = None
+    lock_conflict: bool = False
+    lock_holder: Optional[Dict[str, Any]] = None
+    read_only_cloud: bool = False
+    detected_providers: List[CloudProviderModel] = Field(default_factory=list)
+
+class StorageConfigUpdateModel(BaseModel):
+    storage_mode: str = "local"
+    cloud_dir: str = ""
+    sync_imap: bool = False
+    force_lock: bool = False
+
+class StorageLockResolveModel(BaseModel):
+    action: str = "read_only"  # "read_only" or "takeover"
+
+
 

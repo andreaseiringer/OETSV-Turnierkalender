@@ -3,8 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
   <title>pivitLABS ÖTSV Tool – Turnierkalender</title>
-  <link rel="stylesheet" href="/static/css/style.css?v=1.4.8">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" type="image/png" href="/static/img/favicon.png">
+  <link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png">
+  <link rel="stylesheet" href="/static/css/style.css?v=1.5.0">
 </head>
 <body>
   <h1 class="sr-only">pivitLABS ÖTSV Tool – Turnierkalender &amp; Nennungen</h1>
@@ -30,7 +34,8 @@
       </a>
 
       <div class="header-actions">
-        <span id="app-version-badge" class="badge-count">v1.4.0</span>
+        <span id="storage-mode-badge" class="badge-count" style="display:none;" title="Aktiver Datenbank-Speicherort">☁️ Cloud</span>
+        <span id="app-version-badge" class="badge-count">v1.5.0</span>
         <button id="btn-start-tour" type="button" class="btn-nav btn-tour-trigger" title="Guided Tour nochmal starten">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"></circle>
@@ -312,6 +317,86 @@
     </div>
   </div>
 
-  <script src="/static/js/app.js?v=1.4.8"></script>
+  <!-- First-Run Storage & Cloud Setup Dialog -->
+  <dialog id="storage-setup-dialog" aria-labelledby="storage-setup-title" class="setup-dialog">
+    <div class="setup-dialog-header">
+      <div>
+        <div class="setup-badge">🚀 Ersteinrichtung &bull; Datenbank-Speicherort</div>
+        <h2 id="storage-setup-title" class="setup-dialog-title">Wo soll deine Datenbank gespeichert werden?</h2>
+        <p class="setup-dialog-sub">
+          Du kannst die Datenbank lokal auf diesem Gerät betreiben oder in einem Cloud-Ordner (iCloud Drive, Google Drive, OneDrive) ablegen, um sie auf mehreren Geräten zu nutzen.
+        </p>
+      </div>
+    </div>
+
+    <div class="setup-dialog-body">
+      <div id="storage-setup-alert" class="alert-box"></div>
+
+      <div class="storage-mode-grid">
+        <label class="storage-option-card active" id="setup-card-local">
+          <input type="radio" name="setup-storage-mode" value="local" checked>
+          <div class="storage-option-title">💻 Lokal auf diesem Gerät (Standard)</div>
+          <div class="storage-option-desc">Schnell und ohne Cloud-Abhängigkeit im lokalen Benutzerordner gespeichert.</div>
+        </label>
+
+        <label class="storage-option-card" id="setup-card-cloud">
+          <input type="radio" name="setup-storage-mode" value="cloud">
+          <div class="storage-option-title">☁️ Cloud-Ordner (iCloud, Google Drive, OneDrive)</div>
+          <div class="storage-option-desc">Sicherer Arbeitskopie-Sync: Datenbank &amp; Vereinsdaten werden im Cloud-Ordner abgelegt.</div>
+        </label>
+      </div>
+
+      <div id="setup-cloud-details" class="setup-cloud-panel" style="display:none;">
+        <div class="form-group">
+          <label class="form-label">Erkannte Cloud-Dienste auf diesem Computer (1-Klick Auswahl):</label>
+          <div id="setup-detected-providers" class="provider-chips"></div>
+        </div>
+
+        <div class="form-group" style="margin-top:0.85rem;">
+          <label class="form-label" for="setup-cloud-dir">Gewählter Cloud-Ordnerpfad:</label>
+          <div style="display:flex; gap:0.5rem;">
+            <input type="text" id="setup-cloud-dir" class="form-input" placeholder="z. B. /Users/.../iCloud Drive/pivitLABS-OETSV-Tool" style="flex:1;">
+            <button type="button" id="btn-setup-browse-folder" class="btn-secondary">📂 Ordner wählen…</button>
+          </div>
+          <span class="form-hint">Falls in diesem Ordner bereits eine <code>adsi.db</code> liegt, werden Datenbank &amp; Verein automatisch übernommen.</span>
+        </div>
+
+        <div class="form-toggle-row" style="margin-top:0.85rem;">
+          <label class="toggle-label">
+            <input type="checkbox" id="setup-sync-imap">
+            <span>Auch IMAP-Postfach-Einstellungen im Cloud-Ordner ablegen (optional)</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="setup-dialog-footer">
+      <button type="button" id="btn-setup-save" class="btn-primary">Speicherort übernehmen &amp; starten</button>
+    </div>
+  </dialog>
+
+  <!-- Multi-PC Cloud Lock Conflict Warning Dialog -->
+  <dialog id="lock-conflict-dialog" aria-labelledby="lock-conflict-title" class="setup-dialog">
+    <div class="setup-dialog-header">
+      <div>
+        <div class="setup-badge" style="background:rgba(245, 158, 11, 0.15); color:#d97706; border-color:rgba(245, 158, 11, 0.4);">⚠️ Gleichzeitiger Cloud-Zugriff erkannt</div>
+        <h2 id="lock-conflict-title" class="setup-dialog-title">Datenbank ist auf einem anderen Gerät geöffnet</h2>
+        <p id="lock-conflict-desc" class="setup-dialog-sub">
+          Ein anderer Computer greift derzeit auf denselben Cloud-Ordner zu.
+        </p>
+      </div>
+    </div>
+    <div class="setup-dialog-body">
+      <p style="font-size:0.875rem; color:var(--text-main); line-height:1.5;">
+        Um Datenverlust in Cloud-Ordnern zu verhindern, kannst du entweder im <strong>Nur-Lesen-Modus</strong> fortfahren (keine Überschreibung in der Cloud) oder die <strong>Sperre übernehmen</strong>, falls das andere Gerät bereits ausgeschaltet ist.
+      </p>
+    </div>
+    <div class="setup-dialog-footer" style="justify-content:space-between;">
+      <button type="button" id="btn-lock-takeover" class="btn-secondary" style="border-color:#dc2626; color:#dc2626;">Sperre erzwingen &amp; übernehmen</button>
+      <button type="button" id="btn-lock-readonly" class="btn-primary">Im Nur-Lesen-Modus öffnen (Empfohlen)</button>
+    </div>
+  </dialog>
+
+  <script src="/static/js/app.js?v=1.5.0"></script>
 </body>
 </html>

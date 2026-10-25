@@ -2,10 +2,10 @@
 """
 Build & Packaging Script for pivitLABS ÖTSV Tool (https://pivitlabs.com)
 
-Creates ready-to-download customer packages in the `release/` folder:
-1. Native Desktop App via PyInstaller:
-   - macOS: `release/pivitLABS-OETSV-Tool-macOS.zip` & `release/pivitLABS-OETSV-Tool-macOS.dmg`
-   - Windows: `release/pivitLABS-OETSV-Tool-Windows.zip` (incl. `pivitLABS OETSV Tool.exe` + Desktop-Shortcut creator)
+Creates ready-to-download customer installers in the `release/` folder:
+1. Native Standalone Desktop App (pywebview + PWA):
+   - macOS: `release/pivitLABS-OETSV-Tool-macOS.dmg` (Drag-and-Drop to /Applications) & `release/pivitLABS-OETSV-Tool-macOS.zip`
+   - Windows: `release/pivitLABS-OETSV-Tool-Windows-Setup.exe` (via Inno Setup if ISCC is installed) & `release/pivitLABS-OETSV-Tool-Windows.zip`
 2. Universal PC & Mac Starter Package:
    - `release/pivitLABS-OETSV-Tool-Universal-PC-Mac.zip`
 """
@@ -18,48 +18,49 @@ from pathlib import Path
 
 
 LIESMICH_TEXT = """========================================================================
-  pivitLABS ÖTSV Tool – Installations- & Startanleitung
+  pivitLABS ÖTSV Tool – Installations- & Startanleitung (v1.5.0)
   Copyright pivitlabs (https://pivitlabs.com)
 ========================================================================
 
 Vielen Dank für das Herunterladen des pivitLABS ÖTSV Tools!
+Das Tool läuft als eigenständige Desktop-App (App-Fenster ohne Browser-Leiste)
+und unterstützt sowohl lokale Speicherung als auch Cloud-Ordner (iCloud Drive,
+Google Drive, OneDrive).
 
-SO EINFACH STARTEST DU DAS TOOL:
+SO INSTALLIERST & STARTEST DU DIE APP:
 ------------------------------------------------------------------------
 
-[macOS – Eigenständige App]
-1. Entpacke die ZIP-Datei (oder öffne die DMG-Datei).
-2. Ziehe "pivitLABS OETSV Tool.app" in deinen "Programme"-Ordner oder
-   direkt auf deinen Schreibtisch (Desktop).
-3. Doppelklicke auf "pivitLABS OETSV Tool.app".
+[macOS – DMG Installer / Eigenständige App]
+1. Öffne "pivitLABS-OETSV-Tool-macOS.dmg" (oder entpacke die ZIP-Datei).
+2. Ziehe "pivitLABS OETSV Tool.app" in deinen "Programme"-Ordner (Applications).
+3. Starte "pivitLABS OETSV Tool.app" aus dem Programme-Ordner oder Launchpad.
    -> Hinweis beim allerersten Start auf macOS:
       Falls macOS meldet, dass der Entwickler nicht verifiziert werden kann,
       mache einmalig einen Rechtsklick (Ctrl+Klick) auf das App-Symbol und
       wähle "Öffnen" -> "Öffnen".
-4. Dein Browser öffnet sich automatisch unter http://127.0.0.1:8000
+4. Die App öffnet sich als eigenständiges Programmfenster. Beim Schließen des
+   Fensters wird die Datenbank automatisch gesichert und der Server beendet.
 
-[Windows – Eigenständige App (.exe)]
-1. Entpacke die ZIP-Datei in einen beliebigen Ordner (z.B. Dokumente).
-2. Doppelklicke auf "Desktop-Icon-erstellen.vbs" (legt automatisch ein
-   Start-Symbol auf deinem Desktop an) ODER starte direkt
-   "pivitLABS OETSV Tool.exe".
-3. Dein Browser öffnet sich automatisch unter http://127.0.0.1:8000
-
-[Universal-Paket (Windows & Mac mit installiertem Python 3.10+)]
-- Windows: Doppelklick auf "Start_OETSV_Tool.bat"
-  (oder "Desktop-Icon-erstellen.vbs" für ein Desktop-Symbol).
-- macOS:   Doppelklick auf "Start_OETSV_Tool.command".
+[Windows – Setup-Installer (.exe) oder Portable ZIP]
+1. Starte "pivitLABS-OETSV-Tool-Windows-Setup.exe" und folge dem Assistenten
+   (legt automatisch ein Startmenü- & Desktop-Symbol an).
+   Alternativ im ZIP-Paket: Starte "pivitLABS OETSV Tool.exe".
+2. Die App öffnet sich als eigenständiges Programmfenster.
 
 ------------------------------------------------------------------------
-VEREIN EINSTELLEN & DATENSPEICHERUNG:
+CLOUD-SPEICHER (iCloud Drive, Google Drive, OneDrive) & VEREIN:
 ------------------------------------------------------------------------
-- Öffne im Browser das Admin-Center: http://127.0.0.1:8000/adsi-admin
-- Unter "Verein einstellen" kannst du deinen Vereinsnamen (z.B.
-  "TSC Musterverein"), das Badge-Kürzel und dein IMAP-Postfach eintragen.
-- ALLE DATEN BLEIBEN DAUERHAFT GESPEICHERT:
-  * macOS App:   ~/Library/Application Support/pivitLABS-OETSV-Tool/
-  * Windows App: %APPDATA%\\pivitLABS-OETSV-Tool\\
-  * Universal:   Direkt im Unterordner data/adsi.db und .env
+- Beim ersten Start (sowie jederzeit im Admin-Center unter "Datenspeicher &
+  Cloud-Synchronisation") kannst du wählen:
+  * Lokal auf diesem Gerät
+  * Cloud-Ordner (iCloud Drive, Google Drive, OneDrive oder eigener Ordner)
+- Arbeitskopie-Prinzip:
+  Beim Start lädt die App die Datenbank in eine schnelle lokale Arbeitskopie
+  und speichert sie nach jedem Abruf sowie beim Schließen des Fensters als
+  konsistente Einzeldatei (adsi.db) zurück in deinen Cloud-Ordner.
+- Im Cloud-Ordner werden standardmäßig die SQLite-Datenbank (adsi.db) und
+  deine Vereinseinstellungen (cloud_config.json) abgelegt. Optional kannst du
+  per Schalter auch die IMAP-Postfach-Einstellungen in der Cloud mitspeichern.
 ========================================================================
 """
 
@@ -99,7 +100,6 @@ def create_universal_zip(project_root: Path, release_dir: Path) -> Path:
     ]
 
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-        # Add LIESMICH.txt and Windows Desktop Shortcut Creator
         zf.writestr(f"{root_folder}/LIESMICH.txt", LIESMICH_TEXT)
         zf.writestr(f"{root_folder}/Desktop-Icon-erstellen.vbs", WINDOWS_SHORTCUT_VBS)
 
@@ -108,7 +108,6 @@ def create_universal_zip(project_root: Path, release_dir: Path) -> Path:
             if src.exists():
                 zf.write(src, f"{root_folder}/{rel}")
 
-        # Add app/ directory (excluding __pycache__)
         app_dir = project_root / "app"
         for path in app_dir.rglob("*"):
             if "__pycache__" in path.parts or path.suffix in (".pyc", ".pyo"):
@@ -120,15 +119,34 @@ def create_universal_zip(project_root: Path, release_dir: Path) -> Path:
     return zip_path
 
 
+def find_iscc_executable() -> str | None:
+    """Locate Inno Setup Compiler (ISCC.exe) on Windows."""
+    if shutil.which("ISCC"):
+        return shutil.which("ISCC")
+    candidates = [
+        Path(os.environ.get("ProgramFiles(x86)", "C:\\Program Files (x86)")) / "Inno Setup 6" / "ISCC.exe",
+        Path(os.environ.get("ProgramFiles", "C:\\Program Files")) / "Inno Setup 6" / "ISCC.exe",
+        Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Inno Setup 6" / "ISCC.exe",
+    ]
+    for c in candidates:
+        if c.exists():
+            return str(c)
+    return None
+
+
 def main() -> None:
     project_root = Path(__file__).resolve().parent
     release_dir = project_root / "release"
     release_dir.mkdir(exist_ok=True)
 
-    # Keep PyInstaller cache inside build/ directory
-    os.environ["PYINSTALLER_CONFIG_DIR"] = str(project_root / "build" / ".pyinstaller_cache")
+    # Ensure icons exist before building
+    try:
+        from scripts.generate_icons import generate_all_icons
+        generate_all_icons(project_root)
+    except Exception as e:
+        print(f"Hinweis bei Icon-Generierung: {e}")
 
-    # Write LIESMICH.txt to project root as well
+    os.environ["PYINSTALLER_CONFIG_DIR"] = str(project_root / "build" / ".pyinstaller_cache")
     (project_root / "LIESMICH.txt").write_text(LIESMICH_TEXT, encoding="utf-8")
 
     try:
@@ -147,10 +165,12 @@ def main() -> None:
         "--clean",
         "--name", "pivitLABS OETSV Tool",
         "--onedir",
+        "--windowed",
         "--add-data", f"{project_root / 'app' / 'static'}{sep}app/static",
         "--add-data", f"{project_root / '.env.example'}{sep}.",
         "--collect-data", "tzdata",
         "--collect-data", "certifi",
+        "--collect-all", "webview",
         "--hidden-import", "uvicorn.logging",
         "--hidden-import", "uvicorn.loops",
         "--hidden-import", "uvicorn.loops.auto",
@@ -162,21 +182,26 @@ def main() -> None:
         "--hidden-import", "uvicorn.lifespan",
         "--hidden-import", "uvicorn.lifespan.on",
         "--hidden-import", "app.main",
+        "--hidden-import", "webview",
     ]
 
-    # On macOS create a native .app bundle (--windowed), on Windows show status console
+    icns_file = project_root / "app" / "static" / "img" / "app-icon.icns"
+    ico_file = project_root / "app" / "static" / "img" / "app-icon.ico"
+
     if sys.platform == "darwin":
-        cmd.append("--windowed")
         cmd.extend(["--osx-bundle-identifier", "com.pivitlabs.oetsvtool"])
-    else:
-        cmd.append("--console")
+        if icns_file.exists():
+            cmd.extend(["--icon", str(icns_file)])
+    elif sys.platform == "win32":
+        if ico_file.exists():
+            cmd.extend(["--icon", str(ico_file)])
 
     cmd.append(str(project_root / "launcher.py"))
 
-    print("1/3 Baue eigenständige Desktop-App mit PyInstaller...")
+    print("1/3 Baue eigenständige Desktop-App (pywebview + FastAPI) mit PyInstaller...")
     subprocess.check_call(cmd, cwd=str(project_root))
 
-    print("2/3 Erstelle kundenfertige Installer-/Download-Pakete in release/...")
+    print("2/3 Erstelle kundenfertige Installer-Pakete in release/...")
     dist_dir = project_root / "dist"
 
     if sys.platform == "darwin":
@@ -189,17 +214,56 @@ def main() -> None:
         shutil.copytree(app_bundle, staging_dir / "pivitLABS OETSV Tool.app", symlinks=True)
         (staging_dir / "LIESMICH.txt").write_text(LIESMICH_TEXT, encoding="utf-8")
 
-        # Create macOS ZIP using ditto (preserves macOS app permissions & symlinks)
+        # 1. Create macOS ZIP using ditto
         mac_zip = release_dir / "pivitLABS-OETSV-Tool-macOS.zip"
         if mac_zip.exists():
             mac_zip.unlink()
         subprocess.check_call(["ditto", "-c", "-k", "--keepParent", str(staging_dir), str(mac_zip)])
+
+        # 2. Create macOS Drag-and-Drop .dmg Installer with /Applications symlink
+        dmg_staging = dist_dir / "dmg_staging"
+        if dmg_staging.exists():
+            shutil.rmtree(dmg_staging)
+        dmg_staging.mkdir(parents=True)
+        shutil.copytree(app_bundle, dmg_staging / "pivitLABS OETSV Tool.app", symlinks=True)
+        (dmg_staging / "LIESMICH.txt").write_text(LIESMICH_TEXT, encoding="utf-8")
+        try:
+            os.symlink("/Applications", dmg_staging / "Applications")
+        except OSError:
+            pass
+
+        mac_dmg = release_dir / "pivitLABS-OETSV-Tool-macOS.dmg"
+        if mac_dmg.exists():
+            mac_dmg.unlink()
+        try:
+            if shutil.which("diskutil"):
+                subprocess.check_call([
+                    "diskutil", "image", "create", "from",
+                    "--format", "UDZO",
+                    "--volumeName", "pivitLABS OETSV Tool",
+                    str(dmg_staging),
+                    str(mac_dmg),
+                ])
+            elif shutil.which("hdiutil"):
+                subprocess.check_call([
+                    "hdiutil", "create",
+                    "-volname", "pivitLABS OETSV Tool",
+                    "-srcfolder", str(dmg_staging),
+                    "-ov",
+                    "-format", "UDZO",
+                    str(mac_dmg),
+                ])
+        except subprocess.CalledProcessError as e:
+            print(f"Hinweis: DMG-Erstellung fehlgeschlagen ({e}) – macOS App-ZIP liegt bereit.")
+        finally:
+            shutil.rmtree(dmg_staging, ignore_errors=True)
 
     elif sys.platform == "win32":
         win_app_dir = dist_dir / "pivitLABS OETSV Tool"
         (win_app_dir / "LIESMICH.txt").write_text(LIESMICH_TEXT, encoding="utf-8")
         (win_app_dir / "Desktop-Icon-erstellen.vbs").write_text(WINDOWS_SHORTCUT_VBS, encoding="utf-8")
 
+        # 1. Portable Windows ZIP
         win_zip = release_dir / "pivitLABS-OETSV-Tool-Windows.zip"
         if win_zip.exists():
             win_zip.unlink()
@@ -207,18 +271,27 @@ def main() -> None:
             str(release_dir / "pivitLABS-OETSV-Tool-Windows"),
             "zip",
             root_dir=str(dist_dir),
-            base_dir="pivitLABS OETSV Tool"
+            base_dir="pivitLABS OETSV Tool",
         )
 
+        # 2. Windows Native Setup Installer (.exe) via Inno Setup
+        iscc = find_iscc_executable()
+        iss_file = project_root / "installer.iss"
+        if iscc and iss_file.exists():
+            print(f"Erstelle Windows Setup-Installer mit Inno Setup ({iscc})...")
+            subprocess.check_call([iscc, str(iss_file)], cwd=str(project_root))
+        else:
+            print("Hinweis: Inno Setup (ISCC.exe) nicht gefunden – Windows-ZIP wurde erstellt.")
+
     print("3/3 Erstelle universelles PC & Mac Paket...")
-    univ_zip = create_universal_zip(project_root, release_dir)
+    create_universal_zip(project_root, release_dir)
 
     print("\n" + "=" * 68)
-    print("  FERTIG! Folgende Kunden-Pakete liegen bereit in: release/")
+    print("  FERTIG! Folgende Kunden-Installer liegen bereit in: release/")
     print("=" * 68)
     for f in sorted(release_dir.iterdir()):
         size_mb = f.stat().st_size / (1024 * 1024)
-        print(f"  -> {f.name:<45} ({size_mb:.1f} MB)")
+        print(f"  -> {f.name:<48} ({size_mb:.1f} MB)")
     print("=" * 68)
 
 

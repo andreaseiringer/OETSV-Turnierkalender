@@ -3,8 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
   <title>pivitLABS ÖTSV Tool – Admin Control Center</title>
-  <link rel="stylesheet" href="/static/css/style.css?v=1.4.7">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" type="image/png" href="/static/img/favicon.png">
+  <link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png">
+  <link rel="stylesheet" href="/static/css/style.css?v=1.5.0">
 </head>
 <body>
   <h1 class="sr-only">pivitLABS ÖTSV Tool – Admin Control Center</h1>
@@ -148,6 +152,72 @@
             </button>
           </div>
         </div>
+      </section>
+
+      <!-- Storage & Cloud Configuration Card -->
+      <section class="admin-actions-card" id="storage-config-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+          <div>
+            <h3 style="font-weight:700;">☁️ Datenspeicher &amp; Cloud-Synchronisation</h3>
+            <p style="font-size:0.8125rem; color:var(--text-muted);">
+              Datenbank (Arbeitskopie-Prinzip) &amp; Vereinsdaten lokal oder in einem Cloud-Ordner (iCloud Drive, Google Drive, OneDrive) ablegen.
+            </p>
+          </div>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <span id="cfg-storage-status-pill" class="badge-count">Lokal</span>
+            <button id="btn-reload-storage-config" class="chip-btn" title="Speicher-Status aktualisieren">Aktualisieren</button>
+          </div>
+        </div>
+
+        <div id="storage-config-alert" class="alert-box"></div>
+
+        <form id="storage-config-form" onsubmit="return false;">
+          <div class="storage-mode-grid" style="margin-bottom:1rem;">
+            <label class="storage-option-card active" id="admin-card-local">
+              <input type="radio" name="admin-storage-mode" value="local" checked>
+              <div class="storage-option-title">💻 Lokal auf diesem Gerät</div>
+              <div class="storage-option-desc">Datenbank bleibt ausschließlich im lokalen Anwendungsordner gespeichert.</div>
+            </label>
+
+            <label class="storage-option-card" id="admin-card-cloud">
+              <input type="radio" name="admin-storage-mode" value="cloud">
+              <div class="storage-option-title">☁️ Cloud-Ordner (iCloud, Google Drive, OneDrive)</div>
+              <div class="storage-option-desc">Beim Start in Arbeitskopie laden &amp; nach Jobs / beim Beenden als Einzeldatei in Cloud sichern.</div>
+            </label>
+          </div>
+
+          <div id="admin-cloud-details" class="setup-cloud-panel" style="display:none;">
+            <div class="form-group">
+              <label class="form-label">Erkannte Cloud-Ordner auf diesem Gerät (1-Klick Auswahl):</label>
+              <div id="admin-detected-providers" class="provider-chips"></div>
+            </div>
+
+            <div class="form-group" style="margin-top:0.85rem;">
+              <label class="form-label" for="cfg-cloud-dir">Cloud-Ordnerpfad (für <code>adsi.db</code> &amp; <code>cloud_config.json</code>):</label>
+              <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                <input type="text" id="cfg-cloud-dir" class="form-input" placeholder="z. B. /Users/.../iCloud Drive/pivitLABS-OETSV-Tool" style="flex:1; min-width:240px;">
+                <button type="button" id="btn-admin-browse-folder" class="btn-secondary">📂 Ordner auswählen…</button>
+              </div>
+              <span class="form-hint">Lokale Arbeitskopie: <code id="cfg-local-db-path">—</code> &bull; Letzter Cloud-Sync: <strong id="cfg-cloud-last-sync">Noch nie</strong></span>
+            </div>
+
+            <div class="form-toggle-row" style="margin-top:0.85rem;">
+              <label class="toggle-label">
+                <input type="checkbox" id="cfg-storage-sync-imap">
+                <span>Auch IMAP-Postfach-Einstellungen im Cloud-Ordner ablegen (Vereinsdaten werden immer mitgespeichert)</span>
+              </label>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.25rem; flex-wrap:wrap;">
+            <button type="button" id="btn-manual-cloud-sync" class="btn-secondary" style="display:none;">
+              🔄 Jetzt mit Cloud synchronisieren
+            </button>
+            <button type="button" id="btn-save-storage-cfg" class="btn-primary">
+              Speicherort speichern
+            </button>
+          </div>
+        </form>
       </section>
 
       <!-- Club Configuration Card ("Verein einstellen") -->
@@ -395,6 +465,6 @@
     </div>
   </div>
 
-  <script src="/static/js/admin.js?v=1.4.7"></script>
+  <script src="/static/js/admin.js?v=1.5.0"></script>
 </body>
 </html>

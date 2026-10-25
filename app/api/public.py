@@ -6,10 +6,12 @@ from fastapi import APIRouter, Query, HTTPException
 
 from app.config import settings
 from app.database import get_db_connection
+from app.services import storage_service
 from app.models import (
     TurnierModel, PaarNennungModel, NennungsKlasseModel, SyncStatusModel,
     TurnierErgebnisModel, TurnierTeilnehmerModel, TurnierTeilnehmerKlasseModel,
-    TurnierTeilnehmerListResponse
+    TurnierTeilnehmerListResponse, StorageConfigModel, StorageConfigUpdateModel,
+    StorageLockResolveModel
 )
 
 router = APIRouter(prefix="/api", tags=["public"])
@@ -322,6 +324,7 @@ def get_sync_status():
 @router.get("/version")
 def get_version():
     """Health check, system version info, and active club configuration."""
+    st = storage_service.get_storage_status()
     return {
         "status": "healthy",
         "app_version": settings.APP_VERSION,
@@ -329,5 +332,57 @@ def get_version():
         "backend": "FastAPI",
         "database": "SQLite (WAL)",
         "club_name": settings.CLUB_NAME,
-        "club_short": settings.club_short_label
+        "club_short": settings.club_short_label,
+        "setup_completed": st["setup_completed"],
+        "storage_mode": st["storage_mode"],
+        "lock_conflict": st["lock_conflict"],
+        "lock_holder": st["lock_holder"],
+        "read_only_cloud": st["read_only_cloud"],
     }
+
+
+@router.get("/storage-setup", response_model=StorageConfigModel)
+def get_public_storage_setup():
+    """Retrieve storage setup status and detected cloud folders for the startup wizard."""
+    return StorageConfigModel(**storage_service.get_storage_status())
+
+
+@router.post("/storage-setup", response_model=StorageConfigModel)
+def save_public_storage_setup(data: StorageConfigUpdateModel):
+    """Save initial storage setup from the first-run wizard."""
+    st = storage_service.get_storage_status()
+    if st.get("setup_completed") and (settings.ADMIN_PASSWORD or "").strip():
+        raise HTTPException(
+            status_code=403,
+            detail="Die Ersteinrichtung wurde bereits abgeschlossen. Bitte ändere den Speicherort im Admin-Center."
+        )
+    try:
+        status_dict = storage_service.configure_storage(
+            storage_mode=data.storage_mode,
+            cloud_dir=data.cloud_dir,
+            sync_imap=data.sync_imap,
+            force_lock=data.force_lock,
+        )
+        return StorageConfigModel(**status_dict)
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Speicherort konnte nicht eingerichtet werden: {e}")
+
+
+@router.post("/storage-setup/browse")
+def browse_public_storage_folder():
+    """Open native OS folder picker from the first-run setup dialog."""
+    st = storage_service.get_storage_status()
+    if st.get("setup_completed") and (settings.ADMIN_PASSWORD or "").strip():
+        raise HTTPException(status_code=403, detail="Bitte im Admin-Center öffnen.")
+    chosen = storage_service.open_native_folder_dialog(initial_dir=st.get("cloud_dir", ""))
+    return {"selected_path": chosen}
+
+
+@router.post("/storage-setup/resolve-lock", response_model=StorageConfigModel)
+def resolve_public_storage_lock(data: StorageLockResolveModel):
+    """Resolve an active multi-device lock conflict ('read_only' or 'takeover')."""
+    status_dict = storage_service.resolve_lock_conflict(action=data.action)
+    return StorageConfigModel(**status_dict)
+
